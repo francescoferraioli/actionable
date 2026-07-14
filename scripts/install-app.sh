@@ -14,8 +14,11 @@ npm run build
 # The app ships without node_modules, so the main and preload bundles must be
 # self-contained: only electron and node builtins may be required at runtime.
 echo "==> Checking bundles are self-contained"
+BUILTINS="$(node -p "require('node:module').builtinModules.join('|')")"
 EXTERNALS="$(grep -ohE 'require\("[^"]+"\)' out/main/index.js out/preload/index.js \
-  | grep -v '"node:' | grep -v '"electron"' | sort -u || true)"
+  | sed -E 's/require\("([^"]+)"\)/\1/' | sort -u \
+  | grep -vE '^node:' | grep -vx 'electron' \
+  | grep -vxE "(${BUILTINS})" || true)"
 if [ -n "${EXTERNALS}" ]; then
   echo "error: unbundled runtime dependencies in out/ (move them to devDependencies so electron-vite bundles them):" >&2
   echo "${EXTERNALS}" >&2
