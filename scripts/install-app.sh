@@ -11,6 +11,17 @@ APP_PATH="/Applications/${APP_NAME}.app"
 echo "==> Building main, preload and renderer bundles"
 npm run build
 
+# The app ships without node_modules, so the main and preload bundles must be
+# self-contained: only electron and node builtins may be required at runtime.
+echo "==> Checking bundles are self-contained"
+EXTERNALS="$(grep -ohE 'require\("[^"]+"\)' out/main/index.js out/preload/index.js \
+  | grep -v '"node:' | grep -v '"electron"' | sort -u || true)"
+if [ -n "${EXTERNALS}" ]; then
+  echo "error: unbundled runtime dependencies in out/ (move them to devDependencies so electron-vite bundles them):" >&2
+  echo "${EXTERNALS}" >&2
+  exit 1
+fi
+
 echo "==> Packaging ${APP_NAME}.app"
 npx electron-builder --mac --dir
 
