@@ -1,0 +1,16 @@
+# Local packaging config. The install script (scripts/install-app.sh) builds
+# an unsigned .app and ad-hoc signs it, so no developer certificate is needed.
+appId: com.francescoferraioli.actionable
+productName: Actionable
+directories:
+  output: dist
+files:
+  - out/**/*
+  - package.json
+  # Renderer, preload and main are fully bundled by electron-vite, so no
+  # runtime node_modules are needed inside the app.
+  - '!node_modules/**/*'
+mac:
+  category: public.app-category.productivity
+  identity: null
+npmRebuild: false

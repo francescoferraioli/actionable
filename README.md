@@ -40,6 +40,23 @@ npm run dev        # run the app with hot reload
 | `npm run test:e2e` | Build, then run Playwright end-to-end tests against the real app |
 | `npm run typecheck` | Typecheck all TypeScript projects |
 | `npm run check` | Typecheck plus unit tests |
+| `npm run package` | Build and package an unsigned `Actionable.app` into `dist/` |
+| `npm run install:app` | Package and (re)install into `/Applications`, then relaunch |
+
+## Installing as a real app
+
+```bash
+npm run install:app
+```
+
+This runs [scripts/install-app.sh](scripts/install-app.sh): it bundles the app, packages it with electron-builder, ad-hoc signs it (no developer certificate needed), quits any running copy cleanly, replaces `/Applications/Actionable.app`, and launches the new version.
+
+Why install rather than `npm run dev`:
+
+- Notifications get their own identity. The installed app shows up as **Actionable** in System Settings → Notifications with its own permission entry; in dev the process is the generic Electron binary, so permission belongs to "Electron".
+- You can add it as a login item (System Settings → General → Login Items) so the scheduler is always running.
+
+The installed app and dev share the same database: macOS's case-insensitive filesystem makes `~/Library/Application Support/Actionable` and `~/Library/Application Support/actionable` the same directory, so data created in dev carries over.
 
 ## Architecture
 
