@@ -26,6 +26,11 @@ const env = {
 
 if (env.userDataOverride) {
   app.setPath('userData', env.userDataOverride);
+} else if (!app.isPackaged) {
+  // Keep dev data (and its single-instance lock) separate from the installed
+  // app, whose userData dir would otherwise collide on case-insensitive
+  // filesystems ("actionable" vs "Actionable").
+  app.setPath('userData', `${app.getPath('userData')}-dev`);
 }
 
 let mainWindow: BrowserWindow | null = null;

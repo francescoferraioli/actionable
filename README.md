@@ -56,7 +56,7 @@ Why install rather than `npm run dev`:
 - Notifications get their own identity. The installed app shows up as **Actionable** in System Settings → Notifications with its own permission entry; in dev the process is the generic Electron binary, so permission belongs to "Electron".
 - You can add it as a login item (System Settings → General → Login Items) so the scheduler is always running.
 
-The installed app and dev share the same database: macOS's case-insensitive filesystem makes `~/Library/Application Support/Actionable` and `~/Library/Application Support/actionable` the same directory, so data created in dev carries over.
+The installed app and dev use separate databases: dev appends `-dev` to its userData directory, so `npm run dev` stores data in `~/Library/Application Support/actionable-dev` while the installed app uses `~/Library/Application Support/Actionable`. Dev experiments never touch your real data, and both can run at the same time.
 
 ## Architecture
 
@@ -73,7 +73,7 @@ Data flows one way: the renderer calls the typed API, the main process mutates S
 
 ### Data storage
 
-A single SQLite database at `<userData>/actionable.db` (on macOS, `~/Library/Application Support/actionable/actionable.db`), in WAL mode.
+A single SQLite database at `<userData>/actionable.db`, in WAL mode. On macOS that is `~/Library/Application Support/Actionable/actionable.db` for the installed app and `~/Library/Application Support/actionable-dev/actionable.db` for `npm run dev` (dev deliberately uses its own directory so it never touches real data).
 
 ### Environment variables
 
