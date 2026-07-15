@@ -13,4 +13,8 @@ files:
 mac:
   category: public.app-category.productivity
   identity: null
+  icon: build/icon.icns
+  extendInfo:
+    # Banner-style alerts (not the quieter notification-center-only style).
+    NSUserNotificationAlertStyle: alert
 npmRebuild: false
