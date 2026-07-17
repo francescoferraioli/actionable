@@ -185,11 +185,6 @@ export function InboxView(): React.JSX.Element {
       <p className="muted" data-testid="outstanding-count">
         {pending.length} outstanding
       </p>
-      {!sudoMode && (
-        <p className="muted inbox-sudo-hint" data-testid="inbox-sudo-hint">
-          Enter sudo mode to delete inbox items without completing or dismissing them.
-        </p>
-      )}
       {groups.map((group) => (
         <section key={group.heading} className="day-group">
           <h2 className="day-heading">{group.heading}</h2>
