@@ -157,6 +157,13 @@ export function createOccurrenceRepository(db: DatabaseSync) {
       );
       return this.getOrThrow(id);
     },
+
+    delete(id: number): void {
+      const result = db.prepare('DELETE FROM occurrences WHERE id = ?').run(id);
+      if (result.changes === 0) {
+        throw new Error(`Occurrence ${id} not found`);
+      }
+    },
   };
 }
 

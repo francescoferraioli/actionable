@@ -64,6 +64,11 @@ export function registerIpcHandlers(deps: IpcDeps): void {
     deps.onOccurrencesChanged();
   });
 
+  ipcMain.handle(IpcChannels.occurrencesDelete, (_event, id: number) => {
+    deps.occurrenceService.delete(id);
+    deps.onOccurrencesChanged();
+  });
+
   ipcMain.handle(IpcChannels.occurrencesHistory, (_event, filters: HistoryFilters) =>
     deps.occurrences.listHistory(filters),
   );

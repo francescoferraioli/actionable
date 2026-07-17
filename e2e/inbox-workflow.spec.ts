@@ -1,4 +1,4 @@
-import { createTodoFiringSoon, expect, test } from './helpers/app';
+import { createTodoFiringSoon, enterSudoMode, expect, test } from './helpers/app';
 
 test('scheduled todo creates an occurrence that can be completed', async ({ page }) => {
   await createTodoFiringSoon(page, 'Drink water');
@@ -88,4 +88,23 @@ test('snooze presets are offered', async ({ page }) => {
   await page.getByTestId('nav-history').click();
   const historyRow = page.getByTestId('history-row').filter({ hasText: 'Read' });
   await expect(historyRow.getByTestId('history-status')).toContainText('Snoozed until');
+});
+
+test('sudo mode can delete an inbox item without leaving history', async ({ page }) => {
+  await createTodoFiringSoon(page, 'Old reminder');
+
+  await page.getByTestId('nav-inbox').click();
+  const card = page.getByTestId('occurrence-card').filter({ hasText: 'Old reminder' });
+  await expect(card).toBeVisible();
+  await expect(card.getByTestId('delete-occurrence')).toHaveCount(0);
+
+  await enterSudoMode(page);
+  await card.getByTestId('delete-occurrence').click();
+  await page.getByTestId('confirm-delete-occurrence').click();
+
+  await expect(page.getByTestId('inbox-empty')).toBeVisible();
+  await expect(page.getByTestId('unread-badge')).toHaveCount(0);
+
+  await page.getByTestId('nav-history').click();
+  await expect(page.getByTestId('history-row').filter({ hasText: 'Old reminder' })).toHaveCount(0);
 });

@@ -154,3 +154,16 @@ describe('occurrence service reopenDueSnoozes', () => {
     expect(service.reopenDueSnoozes()).toEqual([]);
   });
 });
+
+describe('occurrence service delete', () => {
+  it('removes the occurrence and its events', () => {
+    const { repos, service, todo } = createFixture();
+    const occurrence = seedOccurrence(repos, todo.id);
+    repos.events.append(occurrence.id, 'created', {}, NOW.toISOString());
+
+    service.delete(occurrence.id);
+
+    expect(repos.occurrences.get(occurrence.id)).toBeNull();
+    expect(repos.events.listForOccurrence(occurrence.id)).toEqual([]);
+  });
+});

@@ -14,6 +14,7 @@ const api: ActionableApi = {
     ipcRenderer.invoke(IpcChannels.occurrencesDismiss, id, reason),
   snoozeOccurrence: (id: number, minutes: number) =>
     ipcRenderer.invoke(IpcChannels.occurrencesSnooze, id, minutes),
+  deleteOccurrence: (id: number) => ipcRenderer.invoke(IpcChannels.occurrencesDelete, id),
   listHistory: (filters: HistoryFilters) =>
     ipcRenderer.invoke(IpcChannels.occurrencesHistory, filters),
   listOccurrenceEvents: (occurrenceId: number) =>

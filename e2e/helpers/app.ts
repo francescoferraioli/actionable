@@ -59,6 +59,15 @@ export interface CreateTodoOptions {
   cron?: string;
 }
 
+export async function enterSudoMode(page: Page): Promise<void> {
+  if (await page.getByTestId('sudo-mode-banner').isVisible()) {
+    return;
+  }
+  await page.getByTestId('enter-sudo-mode').click();
+  await page.getByTestId('confirm-enter-sudo-mode').click();
+  await expect(page.getByTestId('sudo-mode-banner')).toBeVisible();
+}
+
 export async function createTodo(page: Page, options: CreateTodoOptions): Promise<void> {
   await page.getByTestId('nav-todos').click();
   await page.getByTestId('new-todo').click();

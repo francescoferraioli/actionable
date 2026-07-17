@@ -19,6 +19,7 @@ export const IpcChannels = {
   occurrencesComplete: 'occurrences:complete',
   occurrencesDismiss: 'occurrences:dismiss',
   occurrencesSnooze: 'occurrences:snooze',
+  occurrencesDelete: 'occurrences:delete',
   occurrencesHistory: 'occurrences:history',
   occurrenceEventsList: 'occurrence-events:list',
   dismissReasonsList: 'dismiss-reasons:list',
@@ -38,6 +39,7 @@ export interface ActionableApi {
   completeOccurrence(id: number): Promise<void>;
   dismissOccurrence(id: number, reason: string): Promise<void>;
   snoozeOccurrence(id: number, minutes: number): Promise<void>;
+  deleteOccurrence(id: number): Promise<void>;
   listHistory(filters: HistoryFilters): Promise<OccurrenceWithTodo[]>;
   listOccurrenceEvents(occurrenceId: number): Promise<OccurrenceEvent[]>;
   listDismissReasons(): Promise<DismissReason[]>;

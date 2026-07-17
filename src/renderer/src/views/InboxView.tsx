@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { formatDayHeading, formatDue } from '../../../shared/format';
 import type { OccurrenceWithTodo } from '../../../shared/types';
 import { DismissDialog } from '../components/DismissDialog';
+import { Modal } from '../components/Modal';
 import { SnoozePanel } from '../components/SnoozePanel';
 import { api } from '../lib/api';
 import { useAsyncData, useDataVersion, useNow } from '../lib/hooks';
+import { useSudoMode } from '../lib/sudo-mode';
 
 interface DayGroup {
   heading: string;
@@ -28,12 +30,19 @@ function groupByDay(occurrences: OccurrenceWithTodo[], now: Date): DayGroup[] {
 interface OccurrenceCardProps {
   occurrence: OccurrenceWithTodo;
   now: Date;
+  sudoMode: boolean;
   onActioned: () => void;
 }
 
-function OccurrenceCard({ occurrence, now, onActioned }: OccurrenceCardProps): React.JSX.Element {
+function OccurrenceCard({
+  occurrence,
+  now,
+  sudoMode,
+  onActioned,
+}: OccurrenceCardProps): React.JSX.Element {
   const [dismissing, setDismissing] = useState(false);
   const [snoozing, setSnoozing] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const complete = async (): Promise<void> => {
     await api.completeOccurrence(occurrence.id);
@@ -43,6 +52,12 @@ function OccurrenceCard({ occurrence, now, onActioned }: OccurrenceCardProps): R
   const snooze = async (minutes: number): Promise<void> => {
     await api.snoozeOccurrence(occurrence.id, minutes);
     setSnoozing(false);
+    onActioned();
+  };
+
+  const deleteOccurrence = async (): Promise<void> => {
+    await api.deleteOccurrence(occurrence.id);
+    setConfirmingDelete(false);
     onActioned();
   };
 
@@ -85,6 +100,16 @@ function OccurrenceCard({ occurrence, now, onActioned }: OccurrenceCardProps): R
           >
             Dismiss
           </button>
+          {sudoMode && (
+            <button
+              type="button"
+              className="btn btn-small btn-danger-ghost"
+              onClick={() => setConfirmingDelete(true)}
+              data-testid="delete-occurrence"
+            >
+              Delete
+            </button>
+          )}
         </div>
       )}
       {snoozing && <SnoozePanel onSnooze={snooze} onCancel={() => setSnoozing(false)} />}
@@ -98,11 +123,36 @@ function OccurrenceCard({ occurrence, now, onActioned }: OccurrenceCardProps): R
           onCancel={() => setDismissing(false)}
         />
       )}
+      {confirmingDelete && (
+        <Modal
+          title={`Delete "${occurrence.todoName}" from inbox?`}
+          onClose={() => setConfirmingDelete(false)}
+        >
+          <p className="muted">
+            This permanently removes the inbox item and its event history. It will not appear in
+            history or analytics. This cannot be undone.
+          </p>
+          <div className="modal-actions">
+            <button type="button" className="btn" onClick={() => setConfirmingDelete(false)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={deleteOccurrence}
+              data-testid="confirm-delete-occurrence"
+            >
+              Delete
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
 
 export function InboxView(): React.JSX.Element {
+  const { sudoMode } = useSudoMode();
   const version = useDataVersion();
   const now = useNow();
   const { data: pending, reload } = useAsyncData(
@@ -135,6 +185,11 @@ export function InboxView(): React.JSX.Element {
       <p className="muted" data-testid="outstanding-count">
         {pending.length} outstanding
       </p>
+      {!sudoMode && (
+        <p className="muted inbox-sudo-hint" data-testid="inbox-sudo-hint">
+          Enter sudo mode to delete inbox items without completing or dismissing them.
+        </p>
+      )}
       {groups.map((group) => (
         <section key={group.heading} className="day-group">
           <h2 className="day-heading">{group.heading}</h2>
@@ -143,6 +198,7 @@ export function InboxView(): React.JSX.Element {
               key={occurrence.id}
               occurrence={occurrence}
               now={now}
+              sudoMode={sudoMode}
               onActioned={reload}
             />
           ))}

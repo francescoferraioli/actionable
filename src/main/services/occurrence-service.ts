@@ -84,6 +84,11 @@ export function createOccurrenceService(deps: OccurrenceServiceDeps) {
         return reopened;
       });
     },
+
+    /** Permanently removes an occurrence and its event history (sudo purge). */
+    delete(id: number): void {
+      deps.occurrences.delete(id);
+    },
   };
 }
 

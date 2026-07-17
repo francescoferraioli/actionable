@@ -65,6 +65,38 @@ textarea {
   gap: 4px;
 }
 
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.sidebar-sudo-toggle {
+  width: 100%;
+  justify-content: center;
+}
+
+.sidebar-sudo-toggle-active {
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.sudo-mode-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 24px;
+  background: var(--color-warning-soft);
+  border-bottom: 1px solid #f0d9a8;
+  color: var(--color-warning);
+  font-size: 13px;
+}
+
+.inbox-sudo-hint {
+  margin: 0 0 16px;
+}
+
 .sidebar-brand {
   font-size: 16px;
   font-weight: 700;
