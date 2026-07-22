@@ -1,10 +1,10 @@
-import { computeAnalytics, type OccurrenceForAnalytics } from '../../shared/analytics';
-import type { AnalyticsSummary, OccurrenceWithTodo } from '../../shared/types';
+import { computeAnalytics, type ActionForAnalytics } from '../../shared/analytics';
+import type { ActionWithTodo, AnalyticsSummary } from '../../shared/types';
 import type { EventRepository } from '../db/event-repository';
-import type { OccurrenceRepository } from '../db/occurrence-repository';
+import type { ActionRepository } from '../db/action-repository';
 
 export interface AnalyticsServiceDeps {
-  occurrences: OccurrenceRepository;
+  actions: ActionRepository;
   events: EventRepository;
   now: () => Date;
 }
@@ -16,13 +16,13 @@ export function localDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function toAnalyticsOccurrence(occurrence: OccurrenceWithTodo): OccurrenceForAnalytics {
-  const scheduled = new Date(occurrence.scheduledAt);
+function toAnalyticsAction(action: ActionWithTodo): ActionForAnalytics {
+  const scheduled = new Date(action.scheduledAt);
   return {
-    todoId: occurrence.todoId,
-    todoName: occurrence.todoName,
-    status: occurrence.status,
-    dismissReason: occurrence.dismissReason,
+    todoId: action.todoId as number,
+    todoName: action.title,
+    status: action.status,
+    dismissReason: action.dismissReason,
     hour: scheduled.getHours(),
     dateKey: localDateKey(scheduled),
   };
@@ -43,12 +43,13 @@ export function createAnalyticsService(deps: AnalyticsServiceDeps) {
       const from = new Date(now.getTime() - rangeDays * 24 * 60 * 60 * 1000).toISOString();
       const to = now.toISOString();
 
-      const occurrences = deps.occurrences
-        .listHistory({ from })
-        .map(toAnalyticsOccurrence);
+      const actions = deps.actions
+        .listHistory({ from, scheduleOnly: true })
+        .filter((action) => action.todoId !== null)
+        .map(toAnalyticsAction);
 
       return computeAnalytics({
-        occurrences,
+        actions,
         snoozeEventCount: deps.events.countByType('snoozed', from, to),
         rangeDays,
         dateKeys: dateKeysForRange(now, rangeDays),

@@ -1,15 +1,17 @@
 import { nextFireTime, previousFireTime } from '../../shared/schedule';
-import type { Occurrence, Schedule } from '../../shared/types';
-import type { OccurrenceRepository } from '../db/occurrence-repository';
+import type { Action, Schedule } from '../../shared/types';
+import type { ActionRepository } from '../db/action-repository';
 import type { ScheduleRepository } from '../db/schedule-repository';
-import type { OccurrenceService } from './occurrence-service';
+import type { TodoRepository } from '../db/todo-repository';
+import type { ActionService } from './action-service';
 
 export interface SchedulerDeps {
   schedules: ScheduleRepository;
-  occurrences: OccurrenceRepository;
-  occurrenceService: OccurrenceService;
-  onOccurrencesCreated: (occurrences: Occurrence[]) => void;
-  onOccurrencesReopened: (occurrences: Occurrence[]) => void;
+  todos: TodoRepository;
+  actions: ActionRepository;
+  actionService: ActionService;
+  onActionsCreated: (actions: Action[]) => void;
+  onActionsReopened: (actions: Action[]) => void;
   now: () => Date;
   tickMs: number;
   /** How far back a missed fire is still worth surfacing after downtime. */
@@ -21,7 +23,7 @@ const DEFAULT_CATCH_UP_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_FIRES_PER_TICK = 60;
 
 /**
- * Drives occurrence creation. Keeps an in-memory next-fire time per active
+ * Drives action creation. Keeps an in-memory next-fire time per active
  * schedule, ticks on an interval, and wakes elapsed snoozes. Lives entirely in
  * the main process so it keeps running while the window is closed.
  */
@@ -29,6 +31,14 @@ export function createSchedulerService(deps: SchedulerDeps) {
   const catchUpWindowMs = deps.catchUpWindowMs ?? DEFAULT_CATCH_UP_WINDOW_MS;
   const nextFires = new Map<number, { schedule: Schedule; nextFire: Date }>();
   let interval: NodeJS.Timeout | null = null;
+
+  const titleForSchedule = (schedule: Schedule): string => {
+    const todo = deps.todos.get(schedule.todoId);
+    if (!todo) {
+      throw new Error(`Todo ${schedule.todoId} not found for schedule ${schedule.id}`);
+    }
+    return todo.name;
+  };
 
   const trackSchedule = (schedule: Schedule, from: Date): void => {
     const nextFire = nextFireTime(schedule.expression, schedule.timezone, from);
@@ -42,7 +52,7 @@ export function createSchedulerService(deps: SchedulerDeps) {
    * running. Only the latest one: piling up every missed "drink water" after
    * a weekend away would be noise, not accountability.
    */
-  const catchUpSchedule = (schedule: Schedule, now: Date): Occurrence | null => {
+  const catchUpSchedule = (schedule: Schedule, now: Date): Action | null => {
     const lastFire = previousFireTime(schedule.expression, schedule.timezone, now);
     if (!lastFire) {
       return null;
@@ -50,23 +60,29 @@ export function createSchedulerService(deps: SchedulerDeps) {
     if (now.getTime() - lastFire.getTime() > catchUpWindowMs) {
       return null;
     }
-    return deps.occurrenceService.createFromSchedule(schedule.todoId, schedule.id, lastFire);
+    return deps.actionService.createFromSchedule(
+      schedule.todoId,
+      schedule.id,
+      titleForSchedule(schedule),
+      lastFire,
+    );
   };
 
   const processSchedule = (
     entry: { schedule: Schedule; nextFire: Date },
     now: Date,
-  ): Occurrence[] => {
-    const created: Occurrence[] = [];
+  ): Action[] => {
+    const created: Action[] = [];
     let { nextFire } = entry;
     while (nextFire.getTime() <= now.getTime() && created.length < MAX_FIRES_PER_TICK) {
-      const occurrence = deps.occurrenceService.createFromSchedule(
+      const action = deps.actionService.createFromSchedule(
         entry.schedule.todoId,
         entry.schedule.id,
+        titleForSchedule(entry.schedule),
         nextFire,
       );
-      if (occurrence) {
-        created.push(occurrence);
+      if (action) {
+        created.push(action);
       }
       const following = nextFireTime(entry.schedule.expression, entry.schedule.timezone, nextFire);
       if (!following) {
@@ -89,9 +105,9 @@ export function createSchedulerService(deps: SchedulerDeps) {
           trackSchedule(schedule, now);
           return catchUpSchedule(schedule, now);
         })
-        .filter((occurrence): occurrence is Occurrence => occurrence !== null);
+        .filter((action): action is Action => action !== null);
       if (caughtUp.length > 0) {
-        deps.onOccurrencesCreated(caughtUp);
+        deps.onActionsCreated(caughtUp);
       }
     },
 
@@ -106,11 +122,11 @@ export function createSchedulerService(deps: SchedulerDeps) {
       const now = deps.now();
       const created = [...nextFires.values()].flatMap((entry) => processSchedule(entry, now));
       if (created.length > 0) {
-        deps.onOccurrencesCreated(created);
+        deps.onActionsCreated(created);
       }
-      const reopened = deps.occurrenceService.reopenDueSnoozes();
+      const reopened = deps.actionService.reopenDueSnoozes();
       if (reopened.length > 0) {
-        deps.onOccurrencesReopened(reopened);
+        deps.onActionsReopened(reopened);
       }
     },
 

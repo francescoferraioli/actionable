@@ -16,12 +16,15 @@ export function createNotificationService(deps: NotificationServiceDeps) {
   };
 
   return {
-    occurrenceDue(todoName: string, description: string | null): void {
-      show(`${todoName} is due`, description ?? 'Complete, dismiss or snooze it in Actionable.');
+    actionDue(title: string, body: string | null, fileSourced: boolean): void {
+      const defaultBody = fileSourced
+        ? 'Complete it in Actionable.'
+        : 'Complete, dismiss or snooze it in Actionable.';
+      show(`${title} is due`, body ?? defaultBody);
     },
 
-    occurrenceBack(todoName: string): void {
-      show(`${todoName} is back`, 'The snooze is over. It is waiting in your inbox.');
+    actionBack(title: string): void {
+      show(`${title} is back`, 'The snooze is over. It is waiting in your inbox.');
     },
   };
 }

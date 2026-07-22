@@ -1,14 +1,14 @@
 import { app, Menu, nativeImage, Tray } from 'electron';
-import type { OccurrenceRepository } from '../db/occurrence-repository';
+import type { ActionRepository } from '../db/action-repository';
 
 export interface UnreadServiceDeps {
-  occurrences: OccurrenceRepository;
+  actions: ActionRepository;
   onOpen: () => void;
   onQuit: () => void;
 }
 
 /**
- * Email-style unread state: any pending occurrence makes the app unread.
+ * Email-style unread state: any pending action makes the app unread.
  * Reflected on the dock badge and the menu bar (tray) item.
  */
 export function createUnreadService(deps: UnreadServiceDeps) {
@@ -25,7 +25,7 @@ export function createUnreadService(deps: UnreadServiceDeps) {
 
   const service = {
     count(): number {
-      return deps.occurrences.countPending();
+      return deps.actions.countPending();
     },
 
     initTray(): void {
