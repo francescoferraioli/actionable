@@ -1,18 +1,20 @@
-import { app, BrowserWindow } from 'electron';
-import { mkdirSync } from 'node:fs';
+import { app, BrowserWindow, dialog } from 'electron';
+import { mkdirSync, readdirSync, readFileSync, unlinkSync, watch } from 'node:fs';
 import { join } from 'node:path';
 import { IpcChannels } from '../shared/ipc';
-import type { Occurrence } from '../shared/types';
+import type { Action } from '../shared/types';
 import { openDatabase } from './db/database';
 import { createDismissReasonRepository } from './db/dismiss-reason-repository';
 import { createEventRepository } from './db/event-repository';
-import { createOccurrenceRepository } from './db/occurrence-repository';
+import { createActionRepository } from './db/action-repository';
 import { createScheduleRepository } from './db/schedule-repository';
+import { SETTING_INBOX_FOLDER, createSettingsRepository } from './db/settings-repository';
 import { createTodoRepository } from './db/todo-repository';
 import { registerIpcHandlers } from './ipc/register-handlers';
 import { createAnalyticsService } from './services/analytics-service';
+import { createFolderWatcherService } from './services/folder-watcher-service';
 import { createNotificationService } from './services/notification-service';
-import { createOccurrenceService } from './services/occurrence-service';
+import { createActionService } from './services/action-service';
 import { createSchedulerService } from './services/scheduler-service';
 import { createTodoService } from './services/todo-service';
 import { createUnreadService } from './services/unread-service';
@@ -95,19 +97,20 @@ function bootstrap(): void {
   const now = (): Date => new Date();
   const todos = createTodoRepository(db);
   const schedules = createScheduleRepository(db);
-  const occurrences = createOccurrenceRepository(db);
+  const actions = createActionRepository(db);
   const events = createEventRepository(db);
   const dismissReasons = createDismissReasonRepository(db);
+  const settings = createSettingsRepository(db);
 
   const todoService = createTodoService({ todos, schedules, now });
-  const occurrenceService = createOccurrenceService({ occurrences, events, now });
-  const analyticsService = createAnalyticsService({ occurrences, events, now });
+  const actionService = createActionService({ actions, events, now });
+  const analyticsService = createAnalyticsService({ actions, events, now });
   const notifications = createNotificationService({
     enabled: env.notificationsEnabled,
     onOpen: showWindow,
   });
   const unread = createUnreadService({
-    occurrences,
+    actions,
     onOpen: showWindow,
     onQuit: () => app.quit(),
   });
@@ -117,56 +120,92 @@ function bootstrap(): void {
     broadcastDataChanged();
   };
 
-  const notifyDue = (created: Occurrence[]): void => {
-    created.forEach((occurrence) => {
-      const todo = todos.get(occurrence.todoId);
-      if (todo) {
-        notifications.occurrenceDue(todo.name, todo.description);
-      }
+  const notifyDue = (created: Action[]): void => {
+    created.forEach((action) => {
+      const todoDescription =
+        action.todoId !== null ? (todos.get(action.todoId)?.description ?? null) : null;
+      notifications.actionDue(
+        action.title,
+        action.source === 'file' ? action.bodyMd : todoDescription,
+        action.source === 'file',
+      );
     });
     onInboxChanged();
   };
 
-  const notifyBack = (reopened: Occurrence[]): void => {
-    reopened.forEach((occurrence) => {
-      const todo = todos.get(occurrence.todoId);
-      if (todo) {
-        notifications.occurrenceBack(todo.name);
-      }
+  const notifyBack = (reopened: Action[]): void => {
+    reopened.forEach((action) => {
+      notifications.actionBack(action.title);
     });
     onInboxChanged();
+  };
+
+  const listMarkdownFiles = (folder: string): string[] =>
+    readdirSync(folder, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.md'))
+      .map((entry) => entry.name);
+
+  const folderWatcher = createFolderWatcherService({
+    actionService,
+    getInboxFolder: () => settings.get(SETTING_INBOX_FOLDER),
+    readFile: (path) => readFileSync(path, 'utf8'),
+    unlink: (path) => unlinkSync(path),
+    watch: (folder, onFile) => {
+      const watcher = watch(folder, (_event, filename) => {
+        if (filename && typeof filename === 'string') {
+          onFile(filename);
+        }
+      });
+      return () => watcher.close();
+    },
+    onActionsCreated: () => onInboxChanged(),
+  });
+
+  const restartFolderWatcher = (): void => {
+    folderWatcher.start(listMarkdownFiles);
   };
 
   const scheduler = createSchedulerService({
     schedules,
-    occurrences,
-    occurrenceService,
-    onOccurrencesCreated: notifyDue,
-    onOccurrencesReopened: notifyBack,
+    todos,
+    actions,
+    actionService,
+    onActionsCreated: notifyDue,
+    onActionsReopened: notifyBack,
     now,
     tickMs: env.tickMs,
   });
 
   registerIpcHandlers({
     todoService,
-    occurrenceService,
+    actionService,
     analyticsService,
-    occurrences,
+    actions,
     events,
     dismissReasons,
+    settings,
+    pickInboxFolder: async () => {
+      const result = await dialog.showOpenDialog({
+        properties: ['openDirectory', 'createDirectory'],
+      });
+      return result.canceled || result.filePaths.length === 0 ? null : result.filePaths[0];
+    },
     onTodosChanged: () => {
       scheduler.refresh();
       onInboxChanged();
     },
-    onOccurrencesChanged: onInboxChanged,
+    onActionsChanged: onInboxChanged,
+    onInboxFolderChanged: restartFolderWatcher,
   });
 
   unread.initTray();
   scheduler.start();
+  restartFolderWatcher();
 
   app.on('before-quit', () => {
     quitting = true;
     scheduler.stop();
+    folderWatcher.stop();
     db.close();
   });
 }
