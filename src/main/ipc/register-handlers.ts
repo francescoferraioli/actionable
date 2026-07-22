@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { ipcMain, shell } from 'electron';
 import { IpcChannels } from '../../shared/ipc';
 import type {
   CreateTodoInput,
@@ -72,6 +72,14 @@ export function registerIpcHandlers(deps: IpcDeps): void {
   ipcMain.handle(IpcChannels.actionsDelete, (_event, id: number) => {
     deps.actionService.delete(id);
     deps.onActionsChanged();
+  });
+
+  ipcMain.handle(IpcChannels.actionsOpenUrl, async (_event, id: number) => {
+    const action = deps.actions.getOrThrow(id);
+    if (!action.url) {
+      throw new Error(`Action ${id} has no URL`);
+    }
+    await shell.openExternal(action.url);
   });
 
   ipcMain.handle(IpcChannels.actionsHistory, (_event, filters: HistoryFilters) =>

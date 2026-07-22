@@ -39,7 +39,13 @@ describe('createFolderWatcherService', () => {
     const watcher = createFolderWatcherService({
       actionService,
       getInboxFolder: () => '/inbox',
-      readFile: () => '# Note\n\nBody text.',
+      readFile: () => `---
+url: https://example.com/task
+---
+
+# Note
+
+Body text.`,
       unlink: vi.fn(),
       watch: () => () => {},
       onActionsCreated,
@@ -49,7 +55,12 @@ describe('createFolderWatcherService', () => {
 
     expect(onActionsCreated).toHaveBeenCalledTimes(1);
     expect(onActionsCreated.mock.calls[0][0]).toMatchObject([
-      { source: 'file', title: 'my task', bodyMd: '# Note\n\nBody text.' },
+      {
+        source: 'file',
+        title: 'my task',
+        url: 'https://example.com/task',
+        bodyMd: '# Note\n\nBody text.',
+      },
     ]);
   });
 });

@@ -20,6 +20,7 @@ export const IpcChannels = {
   actionsDismiss: 'actions:dismiss',
   actionsSnooze: 'actions:snooze',
   actionsDelete: 'actions:delete',
+  actionsOpenUrl: 'actions:open-url',
   actionsHistory: 'actions:history',
   actionEventsList: 'action-events:list',
   dismissReasonsList: 'dismiss-reasons:list',
@@ -43,6 +44,7 @@ export interface ActionableApi {
   dismissAction(id: number, reason: string): Promise<void>;
   snoozeAction(id: number, minutes: number): Promise<void>;
   deleteAction(id: number): Promise<void>;
+  openActionUrl(id: number): Promise<void>;
   listHistory(filters: HistoryFilters): Promise<ActionWithTodo[]>;
   listActionEvents(actionId: number): Promise<ActionEvent[]>;
   listDismissReasons(): Promise<DismissReason[]>;

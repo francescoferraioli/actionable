@@ -1,4 +1,5 @@
 import { basename, extname } from 'node:path';
+import { parseInboxMarkdown } from '../../shared/inbox-markdown';
 import type { Action } from '../../shared/types';
 import type { ActionService } from './action-service';
 
@@ -43,8 +44,9 @@ export function createFolderWatcherService(deps: FolderWatcherDeps) {
     processing.add(key);
     try {
       const path = `${folder}/${filename}`;
-      const bodyMd = deps.readFile(path);
-      const action = deps.actionService.createFromFile(title, bodyMd);
+      const raw = deps.readFile(path);
+      const { url, bodyMd } = parseInboxMarkdown(raw);
+      const action = deps.actionService.createFromFile(title, bodyMd, url);
       deps.unlink(path);
       deps.onActionsCreated([action]);
     } catch {

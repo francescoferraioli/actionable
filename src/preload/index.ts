@@ -15,6 +15,7 @@ const api: ActionableApi = {
   snoozeAction: (id: number, minutes: number) =>
     ipcRenderer.invoke(IpcChannels.actionsSnooze, id, minutes),
   deleteAction: (id: number) => ipcRenderer.invoke(IpcChannels.actionsDelete, id),
+  openActionUrl: (id: number) => ipcRenderer.invoke(IpcChannels.actionsOpenUrl, id),
   listHistory: (filters: HistoryFilters) =>
     ipcRenderer.invoke(IpcChannels.actionsHistory, filters),
   listActionEvents: (actionId: number) =>
