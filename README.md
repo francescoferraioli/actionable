@@ -8,12 +8,12 @@ Built with Electron, React, TypeScript and SQLite. Local-first: no cloud backend
 
 - **Todo definition**: a recurring or one-off commitment, e.g. "Drink water". It is not itself a reminder.
 - **Schedule**: a cron-backed rule attached to a todo, e.g. every hour from 9am to 5pm, daily at 7am, weekly on Monday at 9am. A todo can have several schedules, each with its own timezone. Managed via [schedule presets](src/shared/schedule-presets.ts) that compile to cron, with raw cron as an escape hatch.
-- **Action**: the thing in your inbox. Created when a schedule fires, or when a markdown file is dropped into the configured inbox folder. It is `pending` until you complete, dismiss or snooze it (file-sourced actions are complete-only).
+- **Action**: the thing in your inbox. Created when a schedule fires, or when a markdown file is dropped into the configured inbox folder. It is `pending` until you complete, dismiss or snooze it.
 - **Action events**: every state change (created, completed, dismissed, snoozed, reopened) is appended to an event-sourcing table, which powers history and analytics.
 
 ## Features
 
-- **Inbox**: pending actions grouped by day. Schedule-sourced actions offer Complete, Dismiss and Snooze. File-sourced actions show a markdown preview (expandable) and offer Complete only. Dismissing requires picking a reason (the reason list is a seeded, extensible table). Snoozing offers 5 minutes, 15 minutes, 1 hour or a custom duration; when the snooze elapses the action returns to the inbox and you are notified again.
+- **Inbox**: pending actions grouped by day, with Complete, Dismiss and Snooze actions. Actions with a description show a details icon to view the full markdown body. Dismissing requires picking a reason (the reason list is a seeded, extensible table). Snoozing offers 5 minutes, 15 minutes, 1 hour or a custom duration; when the snooze elapses the action returns to the inbox and you are notified again.
 - **Inbox folder**: configure a folder in Settings. Drop a `.md` file there and the app creates an action immediately (filename → title, body → description) and deletes the file.
 - **Unread state**: like email. Any pending action marks the app unread. The count shows on the macOS dock badge, the menu bar (tray) item, and the in-app inbox badge.
 - **Desktop notifications**: an OS notification fires when an action is created or comes back from a snooze. Clicking it opens the app.

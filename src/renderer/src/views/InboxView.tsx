@@ -28,14 +28,6 @@ function groupByDay(actions: ActionWithTodo[], now: Date): DayGroup[] {
   return groups;
 }
 
-function previewBody(bodyMd: string, maxLength = 120): string {
-  const singleLine = bodyMd.replace(/\s+/g, ' ').trim();
-  if (singleLine.length <= maxLength) {
-    return singleLine;
-  }
-  return `${singleLine.slice(0, maxLength).trimEnd()}…`;
-}
-
 interface ActionCardProps {
   action: ActionWithTodo;
   now: Date;
@@ -71,26 +63,23 @@ function ActionCard({ action, now, sudoMode, onActioned }: ActionCardProps): Rea
       <div className="action-info">
         <div className="action-title">
           <span className="action-name">{action.title}</span>
+          {action.bodyMd && (
+            <button
+              type="button"
+              className="btn-icon btn-icon-muted"
+              onClick={() => setExpanded(true)}
+              aria-label="View details"
+              title="View details"
+              data-testid="action-details"
+            >
+              ⓘ
+            </button>
+          )}
           {action.todoCategory && <span className="chip">{action.todoCategory}</span>}
         </div>
         <div className="muted" data-testid="action-due">
           {formatDue(action.scheduledAt, now)}
         </div>
-        {action.bodyMd && (
-          <div className="action-body-preview">
-            <p className="muted action-body-preview-text" data-testid="action-body-preview">
-              {previewBody(action.bodyMd)}
-            </p>
-            <button
-              type="button"
-              className="btn btn-small btn-ghost"
-              onClick={() => setExpanded(true)}
-              data-testid="action-expand"
-            >
-              Show details
-            </button>
-          </div>
-        )}
       </div>
       {!snoozing && (
         <div className="action-actions">

@@ -213,14 +213,29 @@ textarea {
   flex-wrap: wrap;
 }
 
-.action-body-preview {
-  margin-top: 8px;
+.btn-icon {
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  line-height: 1;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
-.action-body-preview-text {
-  margin: 0 0 6px;
+.btn-icon-muted {
+  width: 22px;
+  height: 22px;
   font-size: 13px;
-  line-height: 1.4;
+  color: var(--color-text-muted);
+  border-color: transparent;
+  background: transparent;
+}
+
+.btn-icon-muted:hover {
+  background: var(--color-bg);
+  border-color: var(--color-border);
 }
 
 .markdown-body {

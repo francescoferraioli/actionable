@@ -25,7 +25,7 @@ test('dropping a markdown file creates an inbox action with all actions', async 
   await expect(card.getByTestId('complete-button')).toBeVisible();
   await expect(card.getByTestId('snooze-button')).toBeVisible();
   await expect(card.getByTestId('dismiss-button')).toBeVisible();
-  await expect(card.getByTestId('action-body-preview')).toContainText('Investigate the login flow');
+  await expect(card.getByTestId('action-details')).toBeVisible();
 });
 
 test('file-sourced action expands to show full markdown', async ({ page }) => {
@@ -37,7 +37,7 @@ test('file-sourced action expands to show full markdown', async ({ page }) => {
   const card = page.getByTestId('action-card').filter({ hasText: 'review notes' });
   await expect(card).toBeVisible({ timeout: 10_000 });
 
-  await card.getByTestId('action-expand').click();
+  await card.getByTestId('action-details').click();
   const body = page.getByTestId('action-body-full');
   await expect(body).toBeVisible();
   await expect(body).toContainText('Review');
