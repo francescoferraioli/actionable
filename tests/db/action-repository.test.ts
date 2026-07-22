@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { HistoryFilters } from '../../src/shared/types';
-import { createRepos, createTestDb, seedOccurrence, seedTodo, type Repos } from '../helpers/test-db';
+import { createRepos, createTestDb, seedAction, seedTodo, type Repos } from '../helpers/test-db';
 
-describe('occurrence repository history filters', () => {
+describe('action repository history filters', () => {
   interface Input {
     filters: HistoryFilters;
   }
 
   interface Output {
-    /** `${todoName}@${scheduledAt}` keys in expected (scheduledAt DESC) order. */
+    /** `${title}@${scheduledAt}` keys in expected (scheduledAt DESC) order. */
     keys: string[];
   }
 
@@ -32,15 +32,16 @@ describe('occurrence repository history filters', () => {
     const exercise = seedTodo(repos, { name: 'Exercise', category: 'health' });
     const standup = seedTodo(repos, { name: 'Standup', category: 'work' });
 
-    seedOccurrence(repos, water.id, { scheduledAt: at(10, 9), status: 'completed' });
-    seedOccurrence(repos, water.id, {
+    seedAction(repos, water.id, { title: 'Drink water', scheduledAt: at(10, 9), status: 'completed' });
+    seedAction(repos, water.id, {
+      title: 'Drink water',
       scheduledAt: at(11, 9),
       status: 'dismissed',
       dismissReason: 'Too busy',
     });
-    seedOccurrence(repos, water.id, { scheduledAt: at(12, 9), status: 'pending' });
-    seedOccurrence(repos, exercise.id, { scheduledAt: at(11, 7), status: 'completed' });
-    seedOccurrence(repos, standup.id, { scheduledAt: at(13, 10), status: 'snoozed' });
+    seedAction(repos, water.id, { title: 'Drink water', scheduledAt: at(12, 9), status: 'pending' });
+    seedAction(repos, exercise.id, { title: 'Exercise', scheduledAt: at(11, 7), status: 'completed' });
+    seedAction(repos, standup.id, { title: 'Standup', scheduledAt: at(13, 10), status: 'snoozed' });
 
     return {
       repos,
@@ -53,8 +54,8 @@ describe('occurrence repository history filters', () => {
   };
 
   const verify = (fixture: Fixture, input: Input, output: Output): void => {
-    const results = fixture.repos.occurrences.listHistory(input.filters);
-    expect(results.map((o) => `${o.todoName}@${o.scheduledAt}`)).toEqual(output.keys);
+    const results = fixture.repos.actions.listHistory(input.filters);
+    expect(results.map((a) => `${a.title}@${a.scheduledAt}`)).toEqual(output.keys);
   };
 
   const testCases: TestCase[] = [
@@ -111,16 +112,33 @@ describe('occurrence repository history filters', () => {
 
   it('filters by todoId', () => {
     const fixture = setup();
-    const results = fixture.repos.occurrences.listHistory({
+    const results = fixture.repos.actions.listHistory({
       todoId: fixture.todoIdsByName.Exercise,
     });
-    expect(results.map((o) => o.todoName)).toEqual(['Exercise']);
+    expect(results.map((a) => a.title)).toEqual(['Exercise']);
+  });
+
+  it('excludes file-sourced actions when scheduleOnly is set', () => {
+    const repos = createRepos(createTestDb());
+    const todo = seedTodo(repos);
+    seedAction(repos, todo.id, { title: 'Scheduled', status: 'completed' });
+    repos.actions.create({
+      source: 'file',
+      todoId: null,
+      scheduleId: null,
+      title: 'From file',
+      bodyMd: 'body',
+      scheduledAt: '2026-07-10T09:00:00.000Z',
+      createdAt: '2026-07-10T09:00:00.000Z',
+    });
+    const results = repos.actions.listHistory({ scheduleOnly: true });
+    expect(results.map((a) => a.title)).toEqual(['Scheduled']);
   });
 });
 
-describe('occurrence repository status updates', () => {
+describe('action repository status updates', () => {
   interface Input {
-    update: Parameters<Repos['occurrences']['setStatus']>[1];
+    update: Parameters<Repos['actions']['setStatus']>[1];
   }
 
   interface Output {
@@ -141,8 +159,8 @@ describe('occurrence repository status updates', () => {
   const setup = (input: Input) => {
     const repos = createRepos(createTestDb());
     const todo = seedTodo(repos);
-    const occurrence = seedOccurrence(repos, todo.id);
-    return repos.occurrences.setStatus(occurrence.id, input.update);
+    const action = seedAction(repos, todo.id);
+    return repos.actions.setStatus(action.id, input.update);
   };
 
   const verify = (result: ReturnType<typeof setup>, output: Output): void => {
@@ -176,8 +194,8 @@ describe('occurrence repository status updates', () => {
   });
 });
 
-describe('occurrence repository scheduling helpers', () => {
-  it('deduplicates occurrences per schedule fire time', () => {
+describe('action repository scheduling helpers', () => {
+  it('deduplicates actions per schedule fire time', () => {
     const repos = createRepos(createTestDb());
     const todo = seedTodo(repos);
     const [schedule] = repos.schedules.replaceForTodo(todo.id, [
@@ -185,60 +203,64 @@ describe('occurrence repository scheduling helpers', () => {
     ]);
     const fireTime = '2026-07-10T09:00:00.000Z';
 
-    expect(repos.occurrences.existsForFire(schedule.id, fireTime)).toBe(false);
-    repos.occurrences.create({
+    expect(repos.actions.existsForFire(schedule.id, fireTime)).toBe(false);
+    repos.actions.create({
+      source: 'schedule',
       todoId: todo.id,
       scheduleId: schedule.id,
+      title: todo.name,
       scheduledAt: fireTime,
       createdAt: fireTime,
     });
-    expect(repos.occurrences.existsForFire(schedule.id, fireTime)).toBe(true);
-    expect(repos.occurrences.latestScheduledAtForSchedule(schedule.id)).toBe(fireTime);
+    expect(repos.actions.existsForFire(schedule.id, fireTime)).toBe(true);
+    expect(repos.actions.latestScheduledAtForSchedule(schedule.id)).toBe(fireTime);
     expect(() =>
-      repos.occurrences.create({
+      repos.actions.create({
+        source: 'schedule',
         todoId: todo.id,
         scheduleId: schedule.id,
+        title: todo.name,
         scheduledAt: fireTime,
         createdAt: fireTime,
       }),
     ).toThrow();
   });
 
-  it('counts and lists pending occurrences ordered by scheduled time', () => {
+  it('counts and lists pending actions ordered by scheduled time', () => {
     const repos = createRepos(createTestDb());
     const todo = seedTodo(repos);
-    seedOccurrence(repos, todo.id, { scheduledAt: '2026-07-10T10:00:00.000Z' });
-    seedOccurrence(repos, todo.id, { scheduledAt: '2026-07-10T09:00:00.000Z' });
-    seedOccurrence(repos, todo.id, { scheduledAt: '2026-07-10T08:00:00.000Z', status: 'completed' });
+    seedAction(repos, todo.id, { scheduledAt: '2026-07-10T10:00:00.000Z' });
+    seedAction(repos, todo.id, { scheduledAt: '2026-07-10T09:00:00.000Z' });
+    seedAction(repos, todo.id, { scheduledAt: '2026-07-10T08:00:00.000Z', status: 'completed' });
 
-    expect(repos.occurrences.countPending()).toBe(2);
-    expect(repos.occurrences.listPending().map((o) => o.scheduledAt)).toEqual([
+    expect(repos.actions.countPending()).toBe(2);
+    expect(repos.actions.listPending().map((a) => a.scheduledAt)).toEqual([
       '2026-07-10T09:00:00.000Z',
       '2026-07-10T10:00:00.000Z',
     ]);
   });
 
-  it('lists snoozed occurrences whose snooze has elapsed', () => {
+  it('lists snoozed actions whose snooze has elapsed', () => {
     const repos = createRepos(createTestDb());
     const todo = seedTodo(repos);
-    const due = seedOccurrence(repos, todo.id, {
+    const due = seedAction(repos, todo.id, {
       scheduledAt: '2026-07-10T09:00:00.000Z',
       status: 'snoozed',
     });
-    repos.occurrences.setStatus(due.id, {
+    repos.actions.setStatus(due.id, {
       status: 'snoozed',
       snoozedUntil: '2026-07-10T09:30:00.000Z',
     });
-    const notDue = seedOccurrence(repos, todo.id, {
+    const notDue = seedAction(repos, todo.id, {
       scheduledAt: '2026-07-10T10:00:00.000Z',
       status: 'snoozed',
     });
-    repos.occurrences.setStatus(notDue.id, {
+    repos.actions.setStatus(notDue.id, {
       status: 'snoozed',
       snoozedUntil: '2026-07-10T11:00:00.000Z',
     });
 
-    const dueList = repos.occurrences.listSnoozedDue('2026-07-10T09:30:00.000Z');
-    expect(dueList.map((o) => o.id)).toEqual([due.id]);
+    const dueList = repos.actions.listSnoozedDue('2026-07-10T09:30:00.000Z');
+    expect(dueList.map((a) => a.id)).toEqual([due.id]);
   });
 });

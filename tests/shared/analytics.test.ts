@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeAnalytics,
-  type OccurrenceForAnalytics,
+  type ActionForAnalytics,
 } from '../../src/shared/analytics';
-import type { OccurrenceStatus } from '../../src/shared/types';
+import type { ActionStatus } from '../../src/shared/types';
 
-const occurrence = (
-  overrides: Partial<OccurrenceForAnalytics> & { status: OccurrenceStatus },
-): OccurrenceForAnalytics => ({
+const action = (
+  overrides: Partial<ActionForAnalytics> & { status: ActionStatus },
+): ActionForAnalytics => ({
   todoId: 1,
   todoName: 'Drink water',
   dismissReason: null,
@@ -18,7 +18,7 @@ const occurrence = (
 
 describe('computeAnalytics totals and rates', () => {
   interface Input {
-    statuses: OccurrenceStatus[];
+    statuses: ActionStatus[];
   }
 
   interface Output {
@@ -37,7 +37,7 @@ describe('computeAnalytics totals and rates', () => {
 
   const setup = (input: Input) =>
     computeAnalytics({
-      occurrences: input.statuses.map((status) => occurrence({ status })),
+      actions: input.statuses.map((status) => action({ status })),
       snoozeEventCount: 0,
       rangeDays: 30,
       dateKeys: ['2026-07-10'],
@@ -56,7 +56,7 @@ describe('computeAnalytics totals and rates', () => {
 
   const testCases: TestCase[] = [
     {
-      description: 'computes rates over all occurrences',
+      description: 'computes rates over all actions',
       input: {
         statuses: ['completed', 'completed', 'completed', 'dismissed', 'pending'],
       },
@@ -69,7 +69,7 @@ describe('computeAnalytics totals and rates', () => {
       },
     },
     {
-      description: 'returns null rates when there are no occurrences',
+      description: 'returns null rates when there are no actions',
       input: { statuses: [] },
       output: { completed: 0, dismissed: 0, pending: 0, completionRate: null, dismissRate: null },
     },
@@ -90,7 +90,7 @@ describe('computeAnalytics totals and rates', () => {
 describe('computeAnalytics best hour', () => {
   interface Input {
     /** [hour, status] pairs for a single todo. */
-    occurrences: [number, OccurrenceStatus][];
+    actions: [number, ActionStatus][];
   }
 
   interface Output {
@@ -105,7 +105,7 @@ describe('computeAnalytics best hour', () => {
 
   const setup = (input: Input) =>
     computeAnalytics({
-      occurrences: input.occurrences.map(([hour, status]) => occurrence({ hour, status })),
+      actions: input.actions.map(([hour, status]) => action({ hour, status })),
       snoozeEventCount: 0,
       rangeDays: 30,
       dateKeys: ['2026-07-10'],
@@ -124,7 +124,7 @@ describe('computeAnalytics best hour', () => {
     {
       description: 'picks the hour with the highest completion rate',
       input: {
-        occurrences: [
+        actions: [
           [7, 'completed'],
           [7, 'completed'],
           [7, 'completed'],
@@ -138,7 +138,7 @@ describe('computeAnalytics best hour', () => {
     {
       description: 'ignores hours with fewer samples than the minimum',
       input: {
-        occurrences: [
+        actions: [
           [7, 'completed'],
           [7, 'completed'],
           [9, 'completed'],
@@ -151,7 +151,7 @@ describe('computeAnalytics best hour', () => {
     {
       description: 'prefers the earlier hour on a tie',
       input: {
-        occurrences: [
+        actions: [
           [14, 'completed'],
           [14, 'completed'],
           [14, 'completed'],
@@ -165,7 +165,7 @@ describe('computeAnalytics best hour', () => {
     {
       description: 'returns null when no hour has enough samples',
       input: {
-        occurrences: [
+        actions: [
           [7, 'completed'],
           [9, 'completed'],
         ],
@@ -175,7 +175,7 @@ describe('computeAnalytics best hour', () => {
     {
       description: 'returns null when nothing was ever completed',
       input: {
-        occurrences: [
+        actions: [
           [7, 'dismissed'],
           [7, 'dismissed'],
           [7, 'dismissed'],
@@ -195,11 +195,11 @@ describe('computeAnalytics best hour', () => {
 describe('computeAnalytics breakdowns', () => {
   it('counts dismiss reasons in descending order', () => {
     const result = computeAnalytics({
-      occurrences: [
-        occurrence({ status: 'dismissed', dismissReason: 'Too busy' }),
-        occurrence({ status: 'dismissed', dismissReason: 'Too busy' }),
-        occurrence({ status: 'dismissed', dismissReason: 'Forgot' }),
-        occurrence({ status: 'completed' }),
+      actions: [
+        action({ status: 'dismissed', dismissReason: 'Too busy' }),
+        action({ status: 'dismissed', dismissReason: 'Too busy' }),
+        action({ status: 'dismissed', dismissReason: 'Forgot' }),
+        action({ status: 'completed' }),
       ],
       snoozeEventCount: 0,
       rangeDays: 30,
@@ -213,10 +213,10 @@ describe('computeAnalytics breakdowns', () => {
 
   it('builds a daily trend across the provided date keys', () => {
     const result = computeAnalytics({
-      occurrences: [
-        occurrence({ status: 'completed', dateKey: '2026-07-10' }),
-        occurrence({ status: 'completed', dateKey: '2026-07-11' }),
-        occurrence({ status: 'dismissed', dateKey: '2026-07-11' }),
+      actions: [
+        action({ status: 'completed', dateKey: '2026-07-10' }),
+        action({ status: 'completed', dateKey: '2026-07-11' }),
+        action({ status: 'dismissed', dateKey: '2026-07-11' }),
       ],
       snoozeEventCount: 2,
       rangeDays: 3,
@@ -230,12 +230,12 @@ describe('computeAnalytics breakdowns', () => {
     expect(result.totals.snoozeEvents).toBe(2);
   });
 
-  it('sorts todos by occurrence volume', () => {
+  it('sorts todos by action volume', () => {
     const result = computeAnalytics({
-      occurrences: [
-        occurrence({ todoId: 1, todoName: 'Water', status: 'completed' }),
-        occurrence({ todoId: 2, todoName: 'Exercise', status: 'completed' }),
-        occurrence({ todoId: 2, todoName: 'Exercise', status: 'dismissed' }),
+      actions: [
+        action({ todoId: 1, todoName: 'Water', status: 'completed' }),
+        action({ todoId: 2, todoName: 'Exercise', status: 'completed' }),
+        action({ todoId: 2, todoName: 'Exercise', status: 'dismissed' }),
       ],
       snoozeEventCount: 0,
       rangeDays: 30,

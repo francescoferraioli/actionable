@@ -1,15 +1,14 @@
 import { createTodoFiringSoon, enterSudoMode, expect, test } from './helpers/app';
 
-test('scheduled todo creates an occurrence that can be completed', async ({ page }) => {
+test('scheduled todo creates an action that can be completed', async ({ page }) => {
   await createTodoFiringSoon(page, 'Drink water');
 
-  // The schedule fires and the occurrence lands in the inbox unprompted.
   await page.getByTestId('nav-inbox').click();
-  const card = page.getByTestId('occurrence-card').filter({ hasText: 'Drink water' });
+  const card = page.getByTestId('action-card').filter({ hasText: 'Drink water' });
   await expect(card).toBeVisible();
   await expect(page.getByTestId('unread-badge')).toHaveText('1');
   await expect(page.getByTestId('outstanding-count')).toHaveText('1 outstanding');
-  await expect(card.getByTestId('occurrence-due')).toContainText('Due');
+  await expect(card.getByTestId('action-due')).toContainText('Due');
 
   await card.getByTestId('complete-button').click();
 
@@ -22,18 +21,17 @@ test('scheduled todo creates an occurrence that can be completed', async ({ page
   await expect(historyRow.getByTestId('history-status')).toContainText('Completed at');
 });
 
-test('dismissing an occurrence requires a reason and records it', async ({ page }) => {
+test('dismissing an action requires a reason and records it', async ({ page }) => {
   await createTodoFiringSoon(page, 'Exercise');
 
   await page.getByTestId('nav-inbox').click();
-  const card = page.getByTestId('occurrence-card').filter({ hasText: 'Exercise' });
+  const card = page.getByTestId('action-card').filter({ hasText: 'Exercise' });
   await expect(card).toBeVisible();
 
   await card.getByTestId('dismiss-button').click();
   const dialog = page.getByTestId('dismiss-reasons');
   await expect(dialog).toBeVisible();
 
-  // Confirm is disabled until a reason is chosen.
   await expect(page.getByTestId('confirm-dismiss')).toBeDisabled();
   await dialog.getByText('Too busy').click();
   await page.getByTestId('confirm-dismiss').click();
@@ -46,25 +44,21 @@ test('dismissing an occurrence requires a reason and records it', async ({ page 
   await expect(historyRow.getByTestId('history-status')).toContainText('Dismissed (too busy)');
 });
 
-test('snoozing hides an occurrence and brings it back when the snooze elapses', async ({
-  page,
-}) => {
+test('snoozing hides an action and brings it back when the snooze elapses', async ({ page }) => {
   await createTodoFiringSoon(page, 'Stretch');
 
   await page.getByTestId('nav-inbox').click();
-  const card = page.getByTestId('occurrence-card').filter({ hasText: 'Stretch' });
+  const card = page.getByTestId('action-card').filter({ hasText: 'Stretch' });
   await expect(card).toBeVisible();
 
   await card.getByTestId('snooze-button').click();
   await expect(page.getByTestId('snooze-panel')).toBeVisible();
-  // 0.05 minutes = 3 seconds, so the test can watch it come back.
   await page.getByTestId('snooze-custom-input').fill('0.05');
   await page.getByTestId('snooze-custom-confirm').click();
 
   await expect(page.getByTestId('inbox-empty')).toBeVisible();
   await expect(page.getByTestId('unread-badge')).toHaveCount(0);
 
-  // The snooze elapses and the occurrence becomes pending again.
   await expect(card).toBeVisible();
   await expect(page.getByTestId('unread-badge')).toHaveText('1');
 });
@@ -73,7 +67,7 @@ test('snooze presets are offered', async ({ page }) => {
   await createTodoFiringSoon(page, 'Read');
 
   await page.getByTestId('nav-inbox').click();
-  const card = page.getByTestId('occurrence-card').filter({ hasText: 'Read' });
+  const card = page.getByTestId('action-card').filter({ hasText: 'Read' });
   await expect(card).toBeVisible();
   await card.getByTestId('snooze-button').click();
 
@@ -84,7 +78,6 @@ test('snooze presets are offered', async ({ page }) => {
   await page.getByTestId('snooze-5').click();
   await expect(page.getByTestId('inbox-empty')).toBeVisible();
 
-  // A 5 minute snooze stays snoozed; it shows up in history as such.
   await page.getByTestId('nav-history').click();
   const historyRow = page.getByTestId('history-row').filter({ hasText: 'Read' });
   await expect(historyRow.getByTestId('history-status')).toContainText('Snoozed until');
@@ -94,13 +87,13 @@ test('sudo mode can delete an inbox item without leaving history', async ({ page
   await createTodoFiringSoon(page, 'Old reminder');
 
   await page.getByTestId('nav-inbox').click();
-  const card = page.getByTestId('occurrence-card').filter({ hasText: 'Old reminder' });
+  const card = page.getByTestId('action-card').filter({ hasText: 'Old reminder' });
   await expect(card).toBeVisible();
-  await expect(card.getByTestId('delete-occurrence')).toHaveCount(0);
+  await expect(card.getByTestId('delete-action')).toHaveCount(0);
 
   await enterSudoMode(page);
-  await card.getByTestId('delete-occurrence').click();
-  await page.getByTestId('confirm-delete-occurrence').click();
+  await card.getByTestId('delete-action').click();
+  await page.getByTestId('confirm-delete-action').click();
 
   await expect(page.getByTestId('inbox-empty')).toBeVisible();
   await expect(page.getByTestId('unread-badge')).toHaveCount(0);

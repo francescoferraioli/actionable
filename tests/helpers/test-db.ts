@@ -1,10 +1,10 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { openDatabase } from '../../src/main/db/database';
 import { createEventRepository } from '../../src/main/db/event-repository';
-import { createOccurrenceRepository } from '../../src/main/db/occurrence-repository';
+import { createActionRepository } from '../../src/main/db/action-repository';
 import { createScheduleRepository } from '../../src/main/db/schedule-repository';
 import { createTodoRepository } from '../../src/main/db/todo-repository';
-import type { Occurrence, OccurrenceStatus, Todo } from '../../src/shared/types';
+import type { Action, ActionStatus, Todo } from '../../src/shared/types';
 
 export const T0 = '2026-07-01T00:00:00.000Z';
 
@@ -16,7 +16,7 @@ export function createRepos(db: DatabaseSync) {
   return {
     todos: createTodoRepository(db),
     schedules: createScheduleRepository(db),
-    occurrences: createOccurrenceRepository(db),
+    actions: createActionRepository(db),
     events: createEventRepository(db),
   };
 }
@@ -37,22 +37,29 @@ export function seedTodo(
   );
 }
 
-export function seedOccurrence(
+export function seedAction(
   repos: Repos,
   todoId: number,
-  overrides: { scheduledAt?: string; status?: OccurrenceStatus; dismissReason?: string } = {},
-): Occurrence {
+  overrides: {
+    title?: string;
+    scheduledAt?: string;
+    status?: ActionStatus;
+    dismissReason?: string;
+  } = {},
+): Action {
   const scheduledAt = overrides.scheduledAt ?? T0;
-  const occurrence = repos.occurrences.create({
+  const action = repos.actions.create({
+    source: 'schedule',
     todoId,
     scheduleId: null,
+    title: overrides.title ?? 'Drink water',
     scheduledAt,
     createdAt: scheduledAt,
   });
   if (!overrides.status || overrides.status === 'pending') {
-    return occurrence;
+    return action;
   }
-  return repos.occurrences.setStatus(occurrence.id, {
+  return repos.actions.setStatus(action.id, {
     status: overrides.status,
     completedAt: overrides.status === 'completed' ? scheduledAt : null,
     dismissedAt: overrides.status === 'dismissed' ? scheduledAt : null,

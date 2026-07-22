@@ -5,7 +5,7 @@ test('history filters by status and analytics reflect actions', async ({ page })
 
   // Action the first occurrence: complete it.
   await page.getByTestId('nav-inbox').click();
-  const card = page.getByTestId('occurrence-card').filter({ hasText: 'Meditate' });
+  const card = page.getByTestId('action-card').filter({ hasText: 'Meditate' });
   await expect(card).toBeVisible();
   await card.getByTestId('complete-button').click();
   await expect(page.getByTestId('inbox-empty')).toBeVisible();
