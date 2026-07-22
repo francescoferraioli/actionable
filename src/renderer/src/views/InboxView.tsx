@@ -48,7 +48,6 @@ function ActionCard({ action, now, sudoMode, onActioned }: ActionCardProps): Rea
   const [snoozing, setSnoozing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const isFileSourced = action.source === 'file';
 
   const complete = async (): Promise<void> => {
     await api.completeAction(action.id);
@@ -103,26 +102,22 @@ function ActionCard({ action, now, sudoMode, onActioned }: ActionCardProps): Rea
           >
             Complete
           </button>
-          {!isFileSourced && (
-            <>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => setSnoozing(true)}
-                data-testid="snooze-button"
-              >
-                Snooze
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger-ghost"
-                onClick={() => setDismissing(true)}
-                data-testid="dismiss-button"
-              >
-                Dismiss
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setSnoozing(true)}
+            data-testid="snooze-button"
+          >
+            Snooze
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger-ghost"
+            onClick={() => setDismissing(true)}
+            data-testid="dismiss-button"
+          >
+            Dismiss
+          </button>
           {sudoMode && (
             <button
               type="button"

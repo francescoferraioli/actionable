@@ -7,7 +7,7 @@ import {
   test,
 } from './helpers/app';
 
-test('dropping a markdown file creates a complete-only inbox action', async ({ page }) => {
+test('dropping a markdown file creates an inbox action with all actions', async ({ page }) => {
   const inboxFolder = createInboxFolder();
   await configureInboxFolder(page, inboxFolder);
 
@@ -23,8 +23,8 @@ test('dropping a markdown file creates a complete-only inbox action', async ({ p
 
   expect(existsSync(filePath)).toBe(false);
   await expect(card.getByTestId('complete-button')).toBeVisible();
-  await expect(card.getByTestId('snooze-button')).toHaveCount(0);
-  await expect(card.getByTestId('dismiss-button')).toHaveCount(0);
+  await expect(card.getByTestId('snooze-button')).toBeVisible();
+  await expect(card.getByTestId('dismiss-button')).toBeVisible();
   await expect(card.getByTestId('action-body-preview')).toContainText('Investigate the login flow');
 });
 
