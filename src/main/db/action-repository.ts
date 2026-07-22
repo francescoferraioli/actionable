@@ -63,14 +63,15 @@ export function createActionRepository(db: DatabaseSync) {
       scheduleId: number | null;
       title: string;
       bodyMd?: string | null;
+      url?: string | null;
       scheduledAt: string;
       createdAt: string;
     }): Action {
       const result = db
         .prepare(
           `INSERT INTO actions (
-             source, todo_id, schedule_id, title, body_md, scheduled_at, status, created_at
-           ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
+             source, todo_id, schedule_id, title, body_md, url, scheduled_at, status, created_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
         )
         .run(
           input.source,
@@ -78,6 +79,7 @@ export function createActionRepository(db: DatabaseSync) {
           input.scheduleId,
           input.title,
           input.bodyMd ?? null,
+          input.url ?? null,
           input.scheduledAt,
           input.createdAt,
         );

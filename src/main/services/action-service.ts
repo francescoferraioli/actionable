@@ -43,7 +43,7 @@ export function createActionService(deps: ActionServiceDeps) {
     },
 
     /** Creates a pending action from an ingested markdown file. */
-    createFromFile(title: string, bodyMd: string): Action {
+    createFromFile(title: string, bodyMd: string | null, url: string | null = null): Action {
       const scheduledAtIso = iso();
       const action = deps.actions.create({
         source: 'file',
@@ -51,10 +51,16 @@ export function createActionService(deps: ActionServiceDeps) {
         scheduleId: null,
         title,
         bodyMd,
+        url,
         scheduledAt: scheduledAtIso,
         createdAt: scheduledAtIso,
       });
-      deps.events.append(action.id, 'created', { source: 'file' }, scheduledAtIso);
+      deps.events.append(
+        action.id,
+        'created',
+        { source: 'file', ...(url ? { url } : {}) },
+        scheduledAtIso,
+      );
       return action;
     },
 

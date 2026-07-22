@@ -33,6 +33,7 @@ export interface ActionRow {
   schedule_id: number | null;
   title: string;
   body_md: string | null;
+  url: string | null;
   scheduled_at: string;
   status: string;
   completed_at: string | null;
@@ -84,6 +85,7 @@ export function toAction(row: ActionRow): Action {
     scheduleId: row.schedule_id,
     title: row.title,
     bodyMd: row.body_md,
+    url: row.url,
     scheduledAt: row.scheduled_at,
     status: row.status as ActionStatus,
     completedAt: row.completed_at,

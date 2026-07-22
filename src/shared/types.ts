@@ -31,6 +31,7 @@ export interface Action {
   scheduleId: number | null;
   title: string;
   bodyMd: string | null;
+  url: string | null;
   scheduledAt: string;
   status: ActionStatus;
   completedAt: string | null;

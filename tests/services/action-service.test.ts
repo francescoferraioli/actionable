@@ -141,19 +141,27 @@ describe('action service createFromFile', () => {
       events: repos.events,
       now: () => NOW,
     });
-    const action = service.createFromFile('Fix the bug', '# Details\n\nDo the thing.');
+    const action = service.createFromFile(
+      'Fix the bug',
+      '# Details\n\nDo the thing.',
+      'https://example.com/issue/1',
+    );
     expect(action).toMatchObject({
       source: 'file',
       todoId: null,
       scheduleId: null,
       title: 'Fix the bug',
       bodyMd: '# Details\n\nDo the thing.',
+      url: 'https://example.com/issue/1',
       status: 'pending',
     });
     const events = repos.events.listForAction(action.id);
     expect(events).toHaveLength(1);
     expect(events[0].eventType).toBe('created');
-    expect(events[0].metadata).toEqual({ source: 'file' });
+    expect(events[0].metadata).toEqual({
+      source: 'file',
+      url: 'https://example.com/issue/1',
+    });
   });
 });
 
