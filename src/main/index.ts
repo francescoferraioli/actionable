@@ -158,7 +158,7 @@ function bootstrap(): void {
       });
       return () => watcher.close();
     },
-    onActionsCreated: () => onInboxChanged(),
+    onActionsCreated: notifyDue,
   });
 
   const restartFolderWatcher = (): void => {

@@ -1,4 +1,5 @@
 import { basename, extname } from 'node:path';
+import type { Action } from '../../shared/types';
 import type { ActionService } from './action-service';
 
 /** Derives an inbox title from a markdown filename. */
@@ -19,7 +20,7 @@ export interface FolderWatcherDeps {
   readFile: (path: string) => string;
   unlink: (path: string) => void;
   watch: (folder: string, onFile: (filename: string) => void) => () => void;
-  onActionsCreated: (count: number) => void;
+  onActionsCreated: (actions: Action[]) => void;
 }
 
 /**
@@ -43,9 +44,9 @@ export function createFolderWatcherService(deps: FolderWatcherDeps) {
     try {
       const path = `${folder}/${filename}`;
       const bodyMd = deps.readFile(path);
-      deps.actionService.createFromFile(title, bodyMd);
+      const action = deps.actionService.createFromFile(title, bodyMd);
       deps.unlink(path);
-      deps.onActionsCreated(1);
+      deps.onActionsCreated([action]);
     } catch {
       // File may still be writing or already removed; ignore and retry on next event.
     } finally {
