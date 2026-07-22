@@ -1,4 +1,5 @@
 import { Notification } from 'electron';
+import { formatNotificationBody } from '../../shared/format';
 
 export interface NotificationServiceDeps {
   enabled: boolean;
@@ -12,6 +13,9 @@ export function createNotificationService(deps: NotificationServiceDeps) {
     }
     const notification = new Notification({ title, body });
     notification.on('click', deps.onOpen);
+    notification.on('failed', (_event, error) => {
+      console.error(`[Actionable] Notification failed (${title}): ${error}`);
+    });
     notification.show();
   };
 
@@ -20,7 +24,7 @@ export function createNotificationService(deps: NotificationServiceDeps) {
       const defaultBody = fileSourced
         ? 'Complete it in Actionable.'
         : 'Complete, dismiss or snooze it in Actionable.';
-      show(`${title} is due`, body ?? defaultBody);
+      show(`${title} is due`, formatNotificationBody(body, defaultBody));
     },
 
     actionBack(title: string): void {

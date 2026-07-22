@@ -77,3 +77,26 @@ export function formatPercent(rate: number | null): string {
   }
   return `${Math.round(rate * 100)}%`;
 }
+
+const NOTIFICATION_BODY_MAX_BYTES = 240;
+
+function truncateToUtf8Bytes(text: string, maxBytes: number): string {
+  const bytes = new TextEncoder().encode(text);
+  if (bytes.length <= maxBytes) {
+    return text;
+  }
+  let end = text.length;
+  while (end > 0 && new TextEncoder().encode(text.slice(0, end)).length > maxBytes - 3) {
+    end -= 1;
+  }
+  return `${text.slice(0, end)}…`;
+}
+
+/** Collapse whitespace and cap length for OS notification bodies (macOS ~256 bytes). */
+export function formatNotificationBody(text: string | null | undefined, fallback: string): string {
+  const trimmed = text?.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+  return truncateToUtf8Bytes(trimmed.replace(/\s+/g, ' '), NOTIFICATION_BODY_MAX_BYTES);
+}

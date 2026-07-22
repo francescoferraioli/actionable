@@ -34,10 +34,6 @@ if [ -z "${BUILT_APP}" ]; then
   exit 1
 fi
 
-# Ad-hoc sign so macOS (Apple Silicon in particular) will launch the bundle.
-echo "==> Ad-hoc signing"
-codesign --force --deep --sign - "${BUILT_APP}"
-
 if pgrep -xq "${APP_NAME}"; then
   echo "==> Quitting running ${APP_NAME}"
   # A real Quit event, so the app shuts the scheduler down and closes the
@@ -57,6 +53,10 @@ fi
 echo "==> Installing to ${APP_PATH}"
 rm -rf "${APP_PATH}"
 ditto "${BUILT_APP}" "${APP_PATH}"
+
+# Ad-hoc sign the installed copy so macOS UNNotification API accepts it.
+echo "==> Ad-hoc signing"
+codesign --force --deep --sign - "${APP_PATH}"
 
 echo "==> Launching"
 open "${APP_PATH}"

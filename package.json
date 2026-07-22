@@ -5,7 +5,7 @@
   "main": "out/main/index.js",
   "private": true,
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "bash scripts/sign-electron.sh && electron-vite dev",
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.json",
@@ -16,6 +16,7 @@
     "package": "npm run build && electron-builder --mac --dir",
     "install:app": "bash scripts/install-app.sh"
   },
+  "postinstall": "bash scripts/sign-electron.sh",
   "author": "Francesco Ferraioli",
   "license": "MIT",
   "devDependencies": {
