@@ -311,6 +311,20 @@ textarea {
   flex: 1;
 }
 
+.settings-example {
+  margin: 12px 0;
+  padding: 10px 12px;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+.action-modal-link {
+  margin: 0 0 12px;
+}
+
 .btn-ghost {
   background: transparent;
   border-color: transparent;

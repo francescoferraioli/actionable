@@ -58,11 +58,27 @@ function ActionCard({ action, now, sudoMode, onActioned }: ActionCardProps): Rea
     onActioned();
   };
 
+  const openLink = async (): Promise<void> => {
+    await api.openActionUrl(action.id);
+  };
+
   return (
     <div className="card action-card" data-testid="action-card">
       <div className="action-info">
         <div className="action-title">
           <span className="action-name">{action.title}</span>
+          {action.url && (
+            <button
+              type="button"
+              className="btn-icon btn-icon-muted"
+              onClick={openLink}
+              aria-label="Open link"
+              title="Open link"
+              data-testid="action-link"
+            >
+              ↗
+            </button>
+          )}
           {action.bodyMd && (
             <button
               type="button"
@@ -138,11 +154,20 @@ function ActionCard({ action, now, sudoMode, onActioned }: ActionCardProps): Rea
           onCancel={() => setDismissing(false)}
         />
       )}
-      {expanded && action.bodyMd && (
+      {expanded && (action.bodyMd || action.url) && (
         <Modal title={action.title} onClose={() => setExpanded(false)}>
-          <div className="markdown-body" data-testid="action-body-full">
-            <ReactMarkdown>{action.bodyMd}</ReactMarkdown>
-          </div>
+          {action.url && (
+            <p className="action-modal-link">
+              <button type="button" className="btn btn-small" onClick={openLink}>
+                Open link
+              </button>
+            </p>
+          )}
+          {action.bodyMd && (
+            <div className="markdown-body" data-testid="action-body-full">
+              <ReactMarkdown>{action.bodyMd}</ReactMarkdown>
+            </div>
+          )}
         </Modal>
       )}
       {confirmingDelete && (

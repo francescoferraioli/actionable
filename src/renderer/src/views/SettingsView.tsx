@@ -35,8 +35,18 @@ export function SettingsView(): React.JSX.Element {
         <h2 className="section-title">Inbox folder</h2>
         <p className="muted">
           Drop markdown files here to create inbox actions. Each file becomes one action; the
-          filename is the title and the file body is the description. The file is deleted after
-          ingestion.
+          filename is the title. The file is deleted after ingestion.
+        </p>
+        <pre className="settings-example" data-testid="inbox-file-format-example">{`---
+url: https://example.com/task/123
+---
+
+# Description
+
+Optional markdown body.`}</pre>
+        <p className="muted">
+          Use YAML frontmatter for an optional <code>url</code> (or <code>link</code>). Everything
+          after the frontmatter is the description.
         </p>
         <div className="settings-folder-row">
           <code className="settings-folder-path" data-testid="inbox-folder-path">

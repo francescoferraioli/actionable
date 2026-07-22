@@ -14,7 +14,7 @@ Built with Electron, React, TypeScript and SQLite. Local-first: no cloud backend
 ## Features
 
 - **Inbox**: pending actions grouped by day, with Complete, Dismiss and Snooze actions. Actions with a description show a details icon to view the full markdown body. Dismissing requires picking a reason (the reason list is a seeded, extensible table). Snoozing offers 5 minutes, 15 minutes, 1 hour or a custom duration; when the snooze elapses the action returns to the inbox and you are notified again.
-- **Inbox folder**: configure a folder in Settings. Drop a `.md` file there and the app creates an action immediately (filename → title, body → description) and deletes the file.
+- **Inbox folder**: configure a folder in Settings. Drop a `.md` file there and the app creates an action immediately (filename → title). Optional YAML frontmatter can set a `url`; the rest of the file is the markdown description.
 - **Unread state**: like email. Any pending action marks the app unread. The count shows on the macOS dock badge, the menu bar (tray) item, and the in-app inbox badge.
 - **Desktop notifications**: an OS notification fires when an action is created or comes back from a snooze. Clicking it opens the app.
 - **Background scheduling**: closing the window only hides it. The scheduler keeps running in the main process until you explicitly quit from the tray menu. On startup, the most recent fire missed while the app was not running (within 24 hours) is surfaced as a late action, so commitments do not silently vanish.

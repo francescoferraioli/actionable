@@ -28,6 +28,26 @@ test('dropping a markdown file creates an inbox action with all actions', async 
   await expect(card.getByTestId('action-details')).toBeVisible();
 });
 
+test('file with frontmatter url shows a link icon in the inbox', async ({ page }) => {
+  const inboxFolder = createInboxFolder();
+  await configureInboxFolder(page, inboxFolder);
+  dropMarkdownInboxFile(
+    inboxFolder,
+    'follow-up.md',
+    `---
+url: https://example.com/task/99
+---
+
+Check the comments on this ticket.`,
+  );
+
+  await page.getByTestId('nav-inbox').click();
+  const card = page.getByTestId('action-card').filter({ hasText: 'follow up' });
+  await expect(card).toBeVisible({ timeout: 10_000 });
+  await expect(card.getByTestId('action-link')).toBeVisible();
+  await expect(card.getByTestId('action-details')).toBeVisible();
+});
+
 test('file-sourced action expands to show full markdown', async ({ page }) => {
   const inboxFolder = createInboxFolder();
   await configureInboxFolder(page, inboxFolder);
