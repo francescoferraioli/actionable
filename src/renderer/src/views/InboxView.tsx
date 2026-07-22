@@ -85,36 +85,44 @@ function ActionCard({ action, now, sudoMode, onActioned }: ActionCardProps): Rea
         <div className="action-actions">
           <button
             type="button"
-            className="btn btn-success"
+            className="btn-icon btn-icon-success"
             onClick={complete}
+            aria-label="Complete"
+            title="Complete"
             data-testid="complete-button"
           >
-            Complete
+            ✓
           </button>
           <button
             type="button"
-            className="btn"
+            className="btn-icon"
             onClick={() => setSnoozing(true)}
+            aria-label="Snooze"
+            title="Snooze"
             data-testid="snooze-button"
           >
-            Snooze
+            ⏾
           </button>
           <button
             type="button"
-            className="btn btn-danger-ghost"
+            className="btn-icon btn-icon-danger"
             onClick={() => setDismissing(true)}
+            aria-label="Dismiss"
+            title="Dismiss"
             data-testid="dismiss-button"
           >
-            Dismiss
+            ✗
           </button>
           {sudoMode && (
             <button
               type="button"
-              className="btn btn-small btn-danger-ghost"
+              className="btn-icon btn-icon-danger"
               onClick={() => setConfirmingDelete(true)}
+              aria-label="Delete"
+              title="Delete"
               data-testid="delete-action"
             >
-              Delete
+              ⌫
             </button>
           )}
         </div>

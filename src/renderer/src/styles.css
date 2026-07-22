@@ -185,7 +185,7 @@ textarea {
 
 .action-card {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
@@ -214,14 +214,24 @@ textarea {
 }
 
 .btn-icon {
+  width: 34px;
+  height: 34px;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
   border-radius: var(--radius);
+  font-size: 16px;
   line-height: 1;
   flex-shrink: 0;
   cursor: pointer;
+}
+
+.btn-icon:hover {
+  background: var(--color-bg);
 }
 
 .btn-icon-muted {
@@ -236,6 +246,26 @@ textarea {
 .btn-icon-muted:hover {
   background: var(--color-bg);
   border-color: var(--color-border);
+}
+
+.btn-icon-success {
+  color: #1e8e4e;
+  border-color: #b8e6cb;
+  background: #e6f4ec;
+}
+
+.btn-icon-success:hover {
+  background: #d4eddf;
+}
+
+.btn-icon-danger {
+  color: #c93a3a;
+  border-color: #f0c2c2;
+  background: #fbeaea;
+}
+
+.btn-icon-danger:hover {
+  background: #f5d4d4;
 }
 
 .markdown-body {
