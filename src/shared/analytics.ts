@@ -2,27 +2,27 @@ import type {
   AnalyticsSummary,
   BestHour,
   DailyTrendPoint,
-  OccurrenceStatus,
+  ActionStatus,
   TodoAnalytics,
 } from './types';
 
 /**
- * Pure analytics over occurrences. Callers pre-compute timezone-dependent
+ * Pure analytics over schedule-sourced actions. Callers pre-compute timezone-dependent
  * values (local hour and date key) so everything here is deterministic.
  */
-export interface OccurrenceForAnalytics {
+export interface ActionForAnalytics {
   todoId: number;
   todoName: string;
-  status: OccurrenceStatus;
+  status: ActionStatus;
   dismissReason: string | null;
-  /** Local hour of day (0-23) the occurrence was scheduled for. */
+  /** Local hour of day (0-23) the action was scheduled for. */
   hour: number;
-  /** Local calendar date key (YYYY-MM-DD) the occurrence was scheduled on. */
+  /** Local calendar date key (YYYY-MM-DD) the action was scheduled on. */
   dateKey: string;
 }
 
 export interface AnalyticsInput {
-  occurrences: OccurrenceForAnalytics[];
+  actions: ActionForAnalytics[];
   snoozeEventCount: number;
   rangeDays: number;
   /** Date keys covering the range, oldest first, for the daily trend. */
@@ -33,16 +33,16 @@ export interface AnalyticsInput {
 const BEST_HOUR_MIN_SAMPLES = 3;
 
 const countByStatus = (
-  occurrences: OccurrenceForAnalytics[],
-  status: OccurrenceStatus,
-): number => occurrences.filter((occurrence) => occurrence.status === status).length;
+  actions: ActionForAnalytics[],
+  status: ActionStatus,
+): number => actions.filter((action) => action.status === status).length;
 
-function bestHourFor(occurrences: OccurrenceForAnalytics[]): BestHour | null {
-  const byHour = new Map<number, OccurrenceForAnalytics[]>();
-  occurrences.forEach((occurrence) => {
-    const bucket = byHour.get(occurrence.hour) ?? [];
-    bucket.push(occurrence);
-    byHour.set(occurrence.hour, bucket);
+function bestHourFor(actions: ActionForAnalytics[]): BestHour | null {
+  const byHour = new Map<number, ActionForAnalytics[]>();
+  actions.forEach((action) => {
+    const bucket = byHour.get(action.hour) ?? [];
+    bucket.push(action);
+    byHour.set(action.hour, bucket);
   });
 
   const candidates = [...byHour.entries()]
@@ -67,33 +67,33 @@ function bestHourFor(occurrences: OccurrenceForAnalytics[]): BestHour | null {
 function analyticsForTodo(
   todoId: number,
   todoName: string,
-  occurrences: OccurrenceForAnalytics[],
+  actions: ActionForAnalytics[],
 ): TodoAnalytics {
-  const total = occurrences.length;
-  const completed = countByStatus(occurrences, 'completed');
-  const dismissed = countByStatus(occurrences, 'dismissed');
+  const total = actions.length;
+  const completed = countByStatus(actions, 'completed');
+  const dismissed = countByStatus(actions, 'dismissed');
   return {
     todoId,
     todoName,
     total,
     completed,
     dismissed,
-    pending: countByStatus(occurrences, 'pending'),
-    snoozed: countByStatus(occurrences, 'snoozed'),
+    pending: countByStatus(actions, 'pending'),
+    snoozed: countByStatus(actions, 'snoozed'),
     completionRate: total > 0 ? completed / total : null,
     dismissRate: total > 0 ? dismissed / total : null,
-    bestHour: bestHourFor(occurrences),
+    bestHour: bestHourFor(actions),
   };
 }
 
 function dismissReasonBreakdown(
-  occurrences: OccurrenceForAnalytics[],
+  actions: ActionForAnalytics[],
 ): { reason: string; count: number }[] {
   const counts = new Map<string, number>();
-  occurrences
-    .filter((occurrence) => occurrence.status === 'dismissed' && occurrence.dismissReason)
-    .forEach((occurrence) => {
-      const reason = occurrence.dismissReason as string;
+  actions
+    .filter((action) => action.status === 'dismissed' && action.dismissReason)
+    .forEach((action) => {
+      const reason = action.dismissReason as string;
       counts.set(reason, (counts.get(reason) ?? 0) + 1);
     });
   return [...counts.entries()]
@@ -101,12 +101,9 @@ function dismissReasonBreakdown(
     .sort((a, b) => b.count - a.count || a.reason.localeCompare(b.reason));
 }
 
-function dailyTrend(
-  occurrences: OccurrenceForAnalytics[],
-  dateKeys: string[],
-): DailyTrendPoint[] {
+function dailyTrend(actions: ActionForAnalytics[], dateKeys: string[]): DailyTrendPoint[] {
   return dateKeys.map((date) => {
-    const onDay = occurrences.filter((occurrence) => occurrence.dateKey === date);
+    const onDay = actions.filter((action) => action.dateKey === date);
     return {
       date,
       completed: countByStatus(onDay, 'completed'),
@@ -116,12 +113,12 @@ function dailyTrend(
 }
 
 export function computeAnalytics(input: AnalyticsInput): AnalyticsSummary {
-  const { occurrences } = input;
+  const { actions } = input;
 
-  const todoIds = [...new Set(occurrences.map((occurrence) => occurrence.todoId))];
+  const todoIds = [...new Set(actions.map((action) => action.todoId))];
   const todos = todoIds
     .map((todoId) => {
-      const forTodo = occurrences.filter((occurrence) => occurrence.todoId === todoId);
+      const forTodo = actions.filter((action) => action.todoId === todoId);
       return analyticsForTodo(todoId, forTodo[0].todoName, forTodo);
     })
     .sort((a, b) => b.total - a.total || a.todoName.localeCompare(b.todoName));
@@ -129,14 +126,14 @@ export function computeAnalytics(input: AnalyticsInput): AnalyticsSummary {
   return {
     rangeDays: input.rangeDays,
     totals: {
-      occurrences: occurrences.length,
-      completed: countByStatus(occurrences, 'completed'),
-      dismissed: countByStatus(occurrences, 'dismissed'),
-      pending: countByStatus(occurrences, 'pending'),
+      actions: actions.length,
+      completed: countByStatus(actions, 'completed'),
+      dismissed: countByStatus(actions, 'dismissed'),
+      pending: countByStatus(actions, 'pending'),
       snoozeEvents: input.snoozeEventCount,
     },
     todos,
-    dismissReasonBreakdown: dismissReasonBreakdown(occurrences),
-    dailyTrend: dailyTrend(occurrences, input.dateKeys),
+    dismissReasonBreakdown: dismissReasonBreakdown(actions),
+    dailyTrend: dailyTrend(actions, input.dateKeys),
   };
 }
