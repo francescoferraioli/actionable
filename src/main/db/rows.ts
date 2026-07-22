@@ -1,9 +1,9 @@
 import type {
-  Occurrence,
-  OccurrenceEvent,
-  OccurrenceEventType,
-  OccurrenceStatus,
-  OccurrenceWithTodo,
+  Action,
+  ActionEvent,
+  ActionEventType,
+  ActionStatus,
+  ActionWithTodo,
   Schedule,
   Todo,
 } from '../../shared/types';
@@ -26,10 +26,13 @@ export interface ScheduleRow {
   active: number;
 }
 
-export interface OccurrenceRow {
+export interface ActionRow {
   id: number;
-  todo_id: number;
+  source: string;
+  todo_id: number | null;
   schedule_id: number | null;
+  title: string;
+  body_md: string | null;
   scheduled_at: string;
   status: string;
   completed_at: string | null;
@@ -39,14 +42,13 @@ export interface OccurrenceRow {
   created_at: string;
 }
 
-export interface OccurrenceWithTodoRow extends OccurrenceRow {
-  todo_name: string;
+export interface ActionWithTodoRow extends ActionRow {
   todo_category: string | null;
 }
 
-export interface OccurrenceEventRow {
+export interface ActionEventRow {
   id: number;
-  occurrence_id: number;
+  action_id: number;
   event_type: string;
   metadata: string;
   timestamp: string;
@@ -74,13 +76,16 @@ export function toSchedule(row: ScheduleRow): Schedule {
   };
 }
 
-export function toOccurrence(row: OccurrenceRow): Occurrence {
+export function toAction(row: ActionRow): Action {
   return {
     id: row.id,
+    source: row.source as Action['source'],
     todoId: row.todo_id,
     scheduleId: row.schedule_id,
+    title: row.title,
+    bodyMd: row.body_md,
     scheduledAt: row.scheduled_at,
-    status: row.status as OccurrenceStatus,
+    status: row.status as ActionStatus,
     completedAt: row.completed_at,
     dismissedAt: row.dismissed_at,
     dismissReason: row.dismiss_reason,
@@ -89,19 +94,18 @@ export function toOccurrence(row: OccurrenceRow): Occurrence {
   };
 }
 
-export function toOccurrenceWithTodo(row: OccurrenceWithTodoRow): OccurrenceWithTodo {
+export function toActionWithTodo(row: ActionWithTodoRow): ActionWithTodo {
   return {
-    ...toOccurrence(row),
-    todoName: row.todo_name,
+    ...toAction(row),
     todoCategory: row.todo_category,
   };
 }
 
-export function toOccurrenceEvent(row: OccurrenceEventRow): OccurrenceEvent {
+export function toActionEvent(row: ActionEventRow): ActionEvent {
   return {
     id: row.id,
-    occurrenceId: row.occurrence_id,
-    eventType: row.event_type as OccurrenceEventType,
+    actionId: row.action_id,
+    eventType: row.event_type as ActionEventType,
     metadata: JSON.parse(row.metadata) as Record<string, unknown>,
     timestamp: row.timestamp,
   };

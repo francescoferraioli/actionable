@@ -1,38 +1,38 @@
 import type { DatabaseSync } from 'node:sqlite';
-import type { OccurrenceEvent, OccurrenceEventType } from '../../shared/types';
-import { toOccurrenceEvent, type OccurrenceEventRow } from './rows';
+import type { ActionEvent, ActionEventType } from '../../shared/types';
+import { toActionEvent, type ActionEventRow } from './rows';
 
 export function createEventRepository(db: DatabaseSync) {
   return {
     append(
-      occurrenceId: number,
-      eventType: OccurrenceEventType,
+      actionId: number,
+      eventType: ActionEventType,
       metadata: Record<string, unknown>,
       timestamp: string,
-    ): OccurrenceEvent {
+    ): ActionEvent {
       const result = db
         .prepare(
-          `INSERT INTO occurrence_events (occurrence_id, event_type, metadata, timestamp)
+          `INSERT INTO action_events (action_id, event_type, metadata, timestamp)
            VALUES (?, ?, ?, ?)`,
         )
-        .run(occurrenceId, eventType, JSON.stringify(metadata), timestamp);
+        .run(actionId, eventType, JSON.stringify(metadata), timestamp);
       const row = db
-        .prepare('SELECT * FROM occurrence_events WHERE id = ?')
-        .get(Number(result.lastInsertRowid)) as unknown as OccurrenceEventRow;
-      return toOccurrenceEvent(row);
+        .prepare('SELECT * FROM action_events WHERE id = ?')
+        .get(Number(result.lastInsertRowid)) as unknown as ActionEventRow;
+      return toActionEvent(row);
     },
 
-    listForOccurrence(occurrenceId: number): OccurrenceEvent[] {
+    listForAction(actionId: number): ActionEvent[] {
       const rows = db
-        .prepare('SELECT * FROM occurrence_events WHERE occurrence_id = ? ORDER BY id')
-        .all(occurrenceId) as unknown as OccurrenceEventRow[];
-      return rows.map(toOccurrenceEvent);
+        .prepare('SELECT * FROM action_events WHERE action_id = ? ORDER BY id')
+        .all(actionId) as unknown as ActionEventRow[];
+      return rows.map(toActionEvent);
     },
 
-    countByType(eventType: OccurrenceEventType, from: string, to: string): number {
+    countByType(eventType: ActionEventType, from: string, to: string): number {
       const row = db
         .prepare(
-          `SELECT COUNT(*) AS count FROM occurrence_events
+          `SELECT COUNT(*) AS count FROM action_events
            WHERE event_type = ? AND timestamp >= ? AND timestamp < ?`,
         )
         .get(eventType, from, to) as { count: number };

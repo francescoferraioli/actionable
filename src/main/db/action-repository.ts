@@ -1,21 +1,21 @@
 import type { DatabaseSync } from 'node:sqlite';
 import type {
+  Action,
+  ActionStatus,
+  ActionWithTodo,
   HistoryFilters,
-  Occurrence,
-  OccurrenceStatus,
-  OccurrenceWithTodo,
 } from '../../shared/types';
 import {
-  toOccurrence,
-  toOccurrenceWithTodo,
-  type OccurrenceRow,
-  type OccurrenceWithTodoRow,
+  toAction,
+  toActionWithTodo,
+  type ActionRow,
+  type ActionWithTodoRow,
 } from './rows';
 
 const WITH_TODO_SELECT = `
-  SELECT o.*, t.name AS todo_name, t.category AS todo_category
-  FROM occurrences o
-  JOIN todos t ON t.id = o.todo_id
+  SELECT a.*, t.category AS todo_category
+  FROM actions a
+  LEFT JOIN todos t ON t.id = a.todo_id
 `;
 
 interface WhereClause {
@@ -28,15 +28,15 @@ function buildHistoryWhere(filters: HistoryFilters): WhereClause {
   const params: (string | number)[] = [];
 
   if (filters.from) {
-    conditions.push('o.scheduled_at >= ?');
+    conditions.push('a.scheduled_at >= ?');
     params.push(filters.from);
   }
   if (filters.to) {
-    conditions.push('o.scheduled_at < ?');
+    conditions.push('a.scheduled_at < ?');
     params.push(filters.to);
   }
   if (filters.todoId !== undefined) {
-    conditions.push('o.todo_id = ?');
+    conditions.push('a.todo_id = ?');
     params.push(filters.todoId);
   }
   if (filters.category !== undefined) {
@@ -44,107 +44,120 @@ function buildHistoryWhere(filters: HistoryFilters): WhereClause {
     params.push(filters.category);
   }
   if (filters.status !== undefined) {
-    conditions.push('o.status = ?');
+    conditions.push('a.status = ?');
     params.push(filters.status);
+  }
+  if (filters.scheduleOnly) {
+    conditions.push("a.source = 'schedule'");
   }
 
   const sql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   return { sql, params };
 }
 
-export function createOccurrenceRepository(db: DatabaseSync) {
+export function createActionRepository(db: DatabaseSync) {
   return {
     create(input: {
-      todoId: number;
+      source: 'schedule' | 'file';
+      todoId: number | null;
       scheduleId: number | null;
+      title: string;
+      bodyMd?: string | null;
       scheduledAt: string;
       createdAt: string;
-    }): Occurrence {
+    }): Action {
       const result = db
         .prepare(
-          `INSERT INTO occurrences (todo_id, schedule_id, scheduled_at, status, created_at)
-           VALUES (?, ?, ?, 'pending', ?)`,
+          `INSERT INTO actions (
+             source, todo_id, schedule_id, title, body_md, scheduled_at, status, created_at
+           ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
         )
-        .run(input.todoId, input.scheduleId, input.scheduledAt, input.createdAt);
+        .run(
+          input.source,
+          input.todoId,
+          input.scheduleId,
+          input.title,
+          input.bodyMd ?? null,
+          input.scheduledAt,
+          input.createdAt,
+        );
       return this.getOrThrow(Number(result.lastInsertRowid));
     },
 
-    /** True when an occurrence already exists for this schedule fire time. */
+    /** True when an action already exists for this schedule fire time. */
     existsForFire(scheduleId: number, scheduledAt: string): boolean {
       const row = db
-        .prepare('SELECT 1 AS x FROM occurrences WHERE schedule_id = ? AND scheduled_at = ?')
+        .prepare('SELECT 1 AS x FROM actions WHERE schedule_id = ? AND scheduled_at = ?')
         .get(scheduleId, scheduledAt);
       return row !== undefined;
     },
 
     latestScheduledAtForSchedule(scheduleId: number): string | null {
       const row = db
-        .prepare('SELECT MAX(scheduled_at) AS latest FROM occurrences WHERE schedule_id = ?')
+        .prepare('SELECT MAX(scheduled_at) AS latest FROM actions WHERE schedule_id = ?')
         .get(scheduleId) as { latest: string | null };
       return row.latest;
     },
 
-    get(id: number): Occurrence | null {
-      const row = db.prepare('SELECT * FROM occurrences WHERE id = ?').get(id) as
-        | OccurrenceRow
-        | undefined;
-      return row ? toOccurrence(row) : null;
+    get(id: number): Action | null {
+      const row = db.prepare('SELECT * FROM actions WHERE id = ?').get(id) as ActionRow | undefined;
+      return row ? toAction(row) : null;
     },
 
-    getOrThrow(id: number): Occurrence {
-      const occurrence = this.get(id);
-      if (!occurrence) {
-        throw new Error(`Occurrence ${id} not found`);
+    getOrThrow(id: number): Action {
+      const action = this.get(id);
+      if (!action) {
+        throw new Error(`Action ${id} not found`);
       }
-      return occurrence;
+      return action;
     },
 
-    listPending(): OccurrenceWithTodo[] {
+    listPending(): ActionWithTodo[] {
       const rows = db
-        .prepare(`${WITH_TODO_SELECT} WHERE o.status = 'pending' ORDER BY o.scheduled_at`)
-        .all() as unknown as OccurrenceWithTodoRow[];
-      return rows.map(toOccurrenceWithTodo);
+        .prepare(`${WITH_TODO_SELECT} WHERE a.status = 'pending' ORDER BY a.scheduled_at`)
+        .all() as unknown as ActionWithTodoRow[];
+      return rows.map(toActionWithTodo);
     },
 
     countPending(): number {
       const row = db
-        .prepare(`SELECT COUNT(*) AS count FROM occurrences WHERE status = 'pending'`)
+        .prepare(`SELECT COUNT(*) AS count FROM actions WHERE status = 'pending'`)
         .get() as { count: number };
       return row.count;
     },
 
-    listSnoozedDue(now: string): Occurrence[] {
+    listSnoozedDue(now: string): Action[] {
       const rows = db
         .prepare(
-          `SELECT * FROM occurrences
+          `SELECT * FROM actions
            WHERE status = 'snoozed' AND snoozed_until IS NOT NULL AND snoozed_until <= ?
            ORDER BY snoozed_until`,
         )
-        .all(now) as unknown as OccurrenceRow[];
-      return rows.map(toOccurrence);
+        .all(now) as unknown as ActionRow[];
+      return rows.map(toAction);
     },
 
-    listHistory(filters: HistoryFilters): OccurrenceWithTodo[] {
+    listHistory(filters: HistoryFilters): ActionWithTodo[] {
       const where = buildHistoryWhere(filters);
       const rows = db
-        .prepare(`${WITH_TODO_SELECT} ${where.sql} ORDER BY o.scheduled_at DESC`)
-        .all(...where.params) as unknown as OccurrenceWithTodoRow[];
-      return rows.map(toOccurrenceWithTodo);
+        .prepare(`${WITH_TODO_SELECT} ${where.sql} ORDER BY a.scheduled_at DESC`)
+        .all(...where.params) as unknown as ActionWithTodoRow[];
+      return rows.map(toActionWithTodo);
     },
 
     setStatus(
       id: number,
       update: {
-        status: OccurrenceStatus;
+        status: ActionStatus;
         completedAt?: string | null;
         dismissedAt?: string | null;
         dismissReason?: string | null;
         snoozedUntil?: string | null;
       },
-    ): Occurrence {
+    ): Action {
       const current = this.getOrThrow(id);
       db.prepare(
-        `UPDATE occurrences
+        `UPDATE actions
          SET status = ?, completed_at = ?, dismissed_at = ?, dismiss_reason = ?, snoozed_until = ?
          WHERE id = ?`,
       ).run(
@@ -159,12 +172,12 @@ export function createOccurrenceRepository(db: DatabaseSync) {
     },
 
     delete(id: number): void {
-      const result = db.prepare('DELETE FROM occurrences WHERE id = ?').run(id);
+      const result = db.prepare('DELETE FROM actions WHERE id = ?').run(id);
       if (result.changes === 0) {
-        throw new Error(`Occurrence ${id} not found`);
+        throw new Error(`Action ${id} not found`);
       }
     },
   };
 }
 
-export type OccurrenceRepository = ReturnType<typeof createOccurrenceRepository>;
+export type ActionRepository = ReturnType<typeof createActionRepository>;
