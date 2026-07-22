@@ -1,7 +1,7 @@
 {
   "name": "actionable",
   "version": "0.1.0",
-  "description": "An accountability-based todo system. Scheduled todos create occurrences that must be completed, dismissed, or snoozed.",
+  "description": "An accountability-based todo system. Scheduled todos create actions that must be completed, dismissed, or snoozed.",
   "main": "out/main/index.js",
   "private": true,
   "scripts": {
