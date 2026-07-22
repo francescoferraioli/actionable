@@ -20,14 +20,19 @@ export interface TodoWithSchedules extends Todo {
   schedules: Schedule[];
 }
 
-export type OccurrenceStatus = 'pending' | 'completed' | 'dismissed' | 'snoozed';
+export type ActionSource = 'schedule' | 'file';
 
-export interface Occurrence {
+export type ActionStatus = 'pending' | 'completed' | 'dismissed' | 'snoozed';
+
+export interface Action {
   id: number;
-  todoId: number;
+  source: ActionSource;
+  todoId: number | null;
   scheduleId: number | null;
+  title: string;
+  bodyMd: string | null;
   scheduledAt: string;
-  status: OccurrenceStatus;
+  status: ActionStatus;
   completedAt: string | null;
   dismissedAt: string | null;
   dismissReason: string | null;
@@ -35,22 +40,21 @@ export interface Occurrence {
   createdAt: string;
 }
 
-export interface OccurrenceWithTodo extends Occurrence {
-  todoName: string;
+export interface ActionWithTodo extends Action {
   todoCategory: string | null;
 }
 
-export type OccurrenceEventType =
+export type ActionEventType =
   | 'created'
   | 'completed'
   | 'dismissed'
   | 'snoozed'
   | 'reopened';
 
-export interface OccurrenceEvent {
+export interface ActionEvent {
   id: number;
-  occurrenceId: number;
-  eventType: OccurrenceEventType;
+  actionId: number;
+  eventType: ActionEventType;
   metadata: Record<string, unknown>;
   timestamp: string;
 }
@@ -90,7 +94,9 @@ export interface HistoryFilters {
   to?: string;
   todoId?: number;
   category?: string;
-  status?: OccurrenceStatus;
+  status?: ActionStatus;
+  /** When true, only schedule-sourced actions are returned. */
+  scheduleOnly?: boolean;
 }
 
 export interface BestHour {
@@ -122,7 +128,7 @@ export interface DailyTrendPoint {
 export interface AnalyticsSummary {
   rangeDays: number;
   totals: {
-    occurrences: number;
+    actions: number;
     completed: number;
     dismissed: number;
     pending: number;
