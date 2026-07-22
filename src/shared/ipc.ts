@@ -3,8 +3,8 @@ import type {
   CreateTodoInput,
   DismissReason,
   HistoryFilters,
-  OccurrenceEvent,
-  OccurrenceWithTodo,
+  ActionEvent,
+  ActionWithTodo,
   TodoWithSchedules,
   UpdateTodoInput,
 } from './types';
@@ -15,16 +15,19 @@ export const IpcChannels = {
   todosUpdate: 'todos:update',
   todosDelete: 'todos:delete',
   categoriesList: 'categories:list',
-  occurrencesListPending: 'occurrences:list-pending',
-  occurrencesComplete: 'occurrences:complete',
-  occurrencesDismiss: 'occurrences:dismiss',
-  occurrencesSnooze: 'occurrences:snooze',
-  occurrencesDelete: 'occurrences:delete',
-  occurrencesHistory: 'occurrences:history',
-  occurrenceEventsList: 'occurrence-events:list',
+  actionsListPending: 'actions:list-pending',
+  actionsComplete: 'actions:complete',
+  actionsDismiss: 'actions:dismiss',
+  actionsSnooze: 'actions:snooze',
+  actionsDelete: 'actions:delete',
+  actionsHistory: 'actions:history',
+  actionEventsList: 'action-events:list',
   dismissReasonsList: 'dismiss-reasons:list',
   analyticsSummary: 'analytics:summary',
   unreadCount: 'unread:count',
+  settingsGetInboxFolder: 'settings:get-inbox-folder',
+  settingsSetInboxFolder: 'settings:set-inbox-folder',
+  settingsPickInboxFolder: 'settings:pick-inbox-folder',
   dataChanged: 'app:data-changed',
 } as const;
 
@@ -35,16 +38,19 @@ export interface ActionableApi {
   updateTodo(input: UpdateTodoInput): Promise<TodoWithSchedules>;
   deleteTodo(id: number): Promise<void>;
   listCategories(): Promise<string[]>;
-  listPendingOccurrences(): Promise<OccurrenceWithTodo[]>;
-  completeOccurrence(id: number): Promise<void>;
-  dismissOccurrence(id: number, reason: string): Promise<void>;
-  snoozeOccurrence(id: number, minutes: number): Promise<void>;
-  deleteOccurrence(id: number): Promise<void>;
-  listHistory(filters: HistoryFilters): Promise<OccurrenceWithTodo[]>;
-  listOccurrenceEvents(occurrenceId: number): Promise<OccurrenceEvent[]>;
+  listPendingActions(): Promise<ActionWithTodo[]>;
+  completeAction(id: number): Promise<void>;
+  dismissAction(id: number, reason: string): Promise<void>;
+  snoozeAction(id: number, minutes: number): Promise<void>;
+  deleteAction(id: number): Promise<void>;
+  listHistory(filters: HistoryFilters): Promise<ActionWithTodo[]>;
+  listActionEvents(actionId: number): Promise<ActionEvent[]>;
   listDismissReasons(): Promise<DismissReason[]>;
   getAnalytics(rangeDays: number): Promise<AnalyticsSummary>;
   getUnreadCount(): Promise<number>;
+  getInboxFolder(): Promise<string | null>;
+  setInboxFolder(path: string | null): Promise<void>;
+  pickInboxFolder(): Promise<string | null>;
   /** Subscribes to change notifications; returns an unsubscribe function. */
   onDataChanged(listener: () => void): () => void;
 }
