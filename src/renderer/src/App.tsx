@@ -6,15 +6,17 @@ import { useSudoMode } from './lib/sudo-mode';
 import { AnalyticsView } from './views/AnalyticsView';
 import { HistoryView } from './views/HistoryView';
 import { InboxView } from './views/InboxView';
+import { SettingsView } from './views/SettingsView';
 import { TodosView } from './views/TodosView';
 
-type View = 'inbox' | 'todos' | 'history' | 'analytics';
+type View = 'inbox' | 'todos' | 'history' | 'analytics' | 'settings';
 
 const NAV_ITEMS: { view: View; label: string }[] = [
   { view: 'inbox', label: 'Inbox' },
   { view: 'todos', label: 'Todos' },
   { view: 'history', label: 'History' },
   { view: 'analytics', label: 'Analytics' },
+  { view: 'settings', label: 'Settings' },
 ];
 
 export function App(): React.JSX.Element {
@@ -89,6 +91,7 @@ export function App(): React.JSX.Element {
         {view === 'todos' && <TodosView />}
         {view === 'history' && <HistoryView />}
         {view === 'analytics' && <AnalyticsView />}
+        {view === 'settings' && <SettingsView />}
       </main>
 
       {showSudoWarning && (

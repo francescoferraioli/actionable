@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { formatDayHeading, formatTime } from '../../../shared/format';
 import type {
   HistoryFilters,
-  OccurrenceStatus,
-  OccurrenceWithTodo,
+  ActionStatus,
+  ActionWithTodo,
 } from '../../../shared/types';
 import { api } from '../lib/api';
 import { useAsyncData, useDataVersion, useNow } from '../lib/hooks';
 
-type StatusFilter = OccurrenceStatus | 'all';
+type StatusFilter = ActionStatus | 'all';
 
 interface FilterState {
   fromDate: string;
@@ -39,43 +39,43 @@ function toHistoryFilters(state: FilterState): HistoryFilters {
   };
 }
 
-const STATUS_ICONS: Record<OccurrenceStatus, { symbol: string; className: string }> = {
+const STATUS_ICONS: Record<ActionStatus, { symbol: string; className: string }> = {
   completed: { symbol: '✓', className: 'history-icon-completed' },
   dismissed: { symbol: '✗', className: 'history-icon-dismissed' },
   snoozed: { symbol: '⏾', className: 'history-icon-snoozed' },
   pending: { symbol: '•', className: 'history-icon-pending' },
 };
 
-function statusDetail(occurrence: OccurrenceWithTodo): string {
-  switch (occurrence.status) {
+function statusDetail(action: ActionWithTodo): string {
+  switch (action.status) {
     case 'completed':
-      return `Completed at ${formatTime(occurrence.completedAt ?? occurrence.scheduledAt)}`;
+      return `Completed at ${formatTime(action.completedAt ?? action.scheduledAt)}`;
     case 'dismissed':
-      return `Dismissed${occurrence.dismissReason ? ` (${occurrence.dismissReason.toLowerCase()})` : ''}`;
+      return `Dismissed${action.dismissReason ? ` (${action.dismissReason.toLowerCase()})` : ''}`;
     case 'snoozed':
-      return occurrence.snoozedUntil
-        ? `Snoozed until ${formatTime(occurrence.snoozedUntil)}`
+      return action.snoozedUntil
+        ? `Snoozed until ${formatTime(action.snoozedUntil)}`
         : 'Snoozed';
     case 'pending':
       return 'Pending';
   }
 }
 
-function HistoryRow({ occurrence }: { occurrence: OccurrenceWithTodo }): React.JSX.Element {
-  const icon = STATUS_ICONS[occurrence.status];
+function HistoryRow({ action }: { action: ActionWithTodo }): React.JSX.Element {
+  const icon = STATUS_ICONS[action.status];
   return (
     <div className="card history-row" data-testid="history-row">
       <div className={`history-icon ${icon.className}`}>{icon.symbol}</div>
       <div className="history-detail">
-        <div className="occurrence-title">
-          <span className="occurrence-name">{occurrence.todoName}</span>
-          {occurrence.todoCategory && <span className="chip">{occurrence.todoCategory}</span>}
+        <div className="action-title">
+          <span className="action-name">{action.title}</span>
+          {action.todoCategory && <span className="chip">{action.todoCategory}</span>}
         </div>
         <div className="muted" data-testid="history-status">
-          {statusDetail(occurrence)}
+          {statusDetail(action)}
         </div>
       </div>
-      <div className="history-time">{formatTime(occurrence.scheduledAt)}</div>
+      <div className="history-time">{formatTime(action.scheduledAt)}</div>
     </div>
   );
 }
@@ -86,25 +86,25 @@ export function HistoryView(): React.JSX.Element {
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const { data: todos } = useAsyncData(() => api.listTodos(), [version]);
   const { data: categories } = useAsyncData(() => api.listCategories(), [version]);
-  const { data: occurrences } = useAsyncData(
+  const { data: actions } = useAsyncData(
     () => api.listHistory(toHistoryFilters(filters)),
     [version, filters],
   );
 
   // The inbox owns pending items; history shows what already happened.
-  const visible = (occurrences ?? []).filter(
-    (occurrence) => filters.status !== 'all' || occurrence.status !== 'pending',
+  const visible = (actions ?? []).filter(
+    (action) => filters.status !== 'all' || action.status !== 'pending',
   );
 
-  const groups = visible.reduce<{ heading: string; items: OccurrenceWithTodo[] }[]>(
-    (accumulator, occurrence) => {
-      const heading = formatDayHeading(occurrence.scheduledAt, now);
+  const groups = visible.reduce<{ heading: string; items: ActionWithTodo[] }[]>(
+    (accumulator, action) => {
+      const heading = formatDayHeading(action.scheduledAt, now);
       const group = accumulator.find((candidate) => candidate.heading === heading);
       if (group) {
-        group.items.push(occurrence);
+        group.items.push(action);
         return accumulator;
       }
-      return [...accumulator, { heading, items: [occurrence] }];
+      return [...accumulator, { heading, items: [action] }];
     },
     [],
   );
@@ -178,19 +178,19 @@ export function HistoryView(): React.JSX.Element {
         </div>
       </div>
 
-      {occurrences !== null && visible.length === 0 && (
+      {actions !== null && visible.length === 0 && (
         <div className="empty-state" data-testid="history-empty">
           <div className="empty-state-icon">🕘</div>
           <h2>No history yet</h2>
-          <p className="muted">Actioned occurrences will show up here.</p>
+          <p className="muted">Actioned items will show up here.</p>
         </div>
       )}
 
       {groups.map((group) => (
         <section key={group.heading} className="day-group">
           <h2 className="day-heading">{group.heading}</h2>
-          {group.items.map((occurrence) => (
-            <HistoryRow key={occurrence.id} occurrence={occurrence} />
+          {group.items.map((action) => (
+            <HistoryRow key={action.id} action={action} />
           ))}
         </section>
       ))}

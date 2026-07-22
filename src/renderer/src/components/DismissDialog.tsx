@@ -1,20 +1,16 @@
 import { useState } from 'react';
-import type { OccurrenceWithTodo } from '../../../shared/types';
+import type { ActionWithTodo } from '../../../shared/types';
 import { api } from '../lib/api';
 import { useAsyncData } from '../lib/hooks';
 import { Modal } from './Modal';
 
 interface DismissDialogProps {
-  occurrence: OccurrenceWithTodo;
+  action: ActionWithTodo;
   onDone: () => void;
   onCancel: () => void;
 }
 
-export function DismissDialog({
-  occurrence,
-  onDone,
-  onCancel,
-}: DismissDialogProps): React.JSX.Element {
+export function DismissDialog({ action, onDone, onCancel }: DismissDialogProps): React.JSX.Element {
   const { data: reasons } = useAsyncData(() => api.listDismissReasons(), []);
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -22,12 +18,12 @@ export function DismissDialog({
     if (!selected) {
       return;
     }
-    await api.dismissOccurrence(occurrence.id, selected);
+    await api.dismissAction(action.id, selected);
     onDone();
   };
 
   return (
-    <Modal title={`Dismiss "${occurrence.todoName}"`} onClose={onCancel}>
+    <Modal title={`Dismiss "${action.title}"`} onClose={onCancel}>
       <p className="muted">Why are you dismissing this?</p>
       <div className="reason-list" data-testid="dismiss-reasons">
         {(reasons ?? []).map((reason) => (

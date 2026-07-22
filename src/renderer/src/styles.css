@@ -183,32 +183,92 @@ textarea {
   margin-bottom: 8px;
 }
 
-.occurrence-card {
+.action-card {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
 }
 
-.occurrence-info {
+.action-info {
   min-width: 200px;
+  flex: 1;
 }
 
-.occurrence-title {
+.action-title {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.occurrence-name {
+.action-name {
   font-weight: 600;
   font-size: 15px;
 }
 
-.occurrence-actions {
+.action-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-body-preview {
+  margin-top: 8px;
+}
+
+.action-body-preview-text {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.markdown-body {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.markdown-body p:first-child {
+  margin-top: 0;
+}
+
+.markdown-body p:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section {
+  max-width: 640px;
+}
+
+.settings-folder-row {
+  margin: 12px 0;
+}
+
+.settings-folder-path {
+  display: block;
+  padding: 8px 10px;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  word-break: break-all;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-manual-row {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-manual-row input {
+  flex: 1;
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
 }
 
 .chip {

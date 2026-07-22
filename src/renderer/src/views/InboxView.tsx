@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { formatDayHeading, formatDue } from '../../../shared/format';
-import type { OccurrenceWithTodo } from '../../../shared/types';
+import type { ActionWithTodo } from '../../../shared/types';
 import { DismissDialog } from '../components/DismissDialog';
 import { Modal } from '../components/Modal';
 import { SnoozePanel } from '../components/SnoozePanel';
@@ -10,72 +11,90 @@ import { useSudoMode } from '../lib/sudo-mode';
 
 interface DayGroup {
   heading: string;
-  occurrences: OccurrenceWithTodo[];
+  actions: ActionWithTodo[];
 }
 
-function groupByDay(occurrences: OccurrenceWithTodo[], now: Date): DayGroup[] {
+function groupByDay(actions: ActionWithTodo[], now: Date): DayGroup[] {
   const groups: DayGroup[] = [];
-  occurrences.forEach((occurrence) => {
-    const heading = formatDayHeading(occurrence.scheduledAt, now);
+  actions.forEach((action) => {
+    const heading = formatDayHeading(action.scheduledAt, now);
     const group = groups.find((candidate) => candidate.heading === heading);
     if (group) {
-      group.occurrences.push(occurrence);
+      group.actions.push(action);
     } else {
-      groups.push({ heading, occurrences: [occurrence] });
+      groups.push({ heading, actions: [action] });
     }
   });
   return groups;
 }
 
-interface OccurrenceCardProps {
-  occurrence: OccurrenceWithTodo;
+function previewBody(bodyMd: string, maxLength = 120): string {
+  const singleLine = bodyMd.replace(/\s+/g, ' ').trim();
+  if (singleLine.length <= maxLength) {
+    return singleLine;
+  }
+  return `${singleLine.slice(0, maxLength).trimEnd()}…`;
+}
+
+interface ActionCardProps {
+  action: ActionWithTodo;
   now: Date;
   sudoMode: boolean;
   onActioned: () => void;
 }
 
-function OccurrenceCard({
-  occurrence,
-  now,
-  sudoMode,
-  onActioned,
-}: OccurrenceCardProps): React.JSX.Element {
+function ActionCard({ action, now, sudoMode, onActioned }: ActionCardProps): React.JSX.Element {
   const [dismissing, setDismissing] = useState(false);
   const [snoozing, setSnoozing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const isFileSourced = action.source === 'file';
 
   const complete = async (): Promise<void> => {
-    await api.completeOccurrence(occurrence.id);
+    await api.completeAction(action.id);
     onActioned();
   };
 
   const snooze = async (minutes: number): Promise<void> => {
-    await api.snoozeOccurrence(occurrence.id, minutes);
+    await api.snoozeAction(action.id, minutes);
     setSnoozing(false);
     onActioned();
   };
 
-  const deleteOccurrence = async (): Promise<void> => {
-    await api.deleteOccurrence(occurrence.id);
+  const deleteAction = async (): Promise<void> => {
+    await api.deleteAction(action.id);
     setConfirmingDelete(false);
     onActioned();
   };
 
   return (
-    <div className="card occurrence-card" data-testid="occurrence-card">
-      <div className="occurrence-info">
-        <div className="occurrence-title">
-          <span className="occurrence-name">{occurrence.todoName}</span>
-          {occurrence.todoCategory && (
-            <span className="chip">{occurrence.todoCategory}</span>
-          )}
+    <div className="card action-card" data-testid="action-card">
+      <div className="action-info">
+        <div className="action-title">
+          <span className="action-name">{action.title}</span>
+          {action.todoCategory && <span className="chip">{action.todoCategory}</span>}
         </div>
-        <div className="muted" data-testid="occurrence-due">
-          {formatDue(occurrence.scheduledAt, now)}
+        <div className="muted" data-testid="action-due">
+          {formatDue(action.scheduledAt, now)}
         </div>
+        {action.bodyMd && (
+          <div className="action-body-preview">
+            <p className="muted action-body-preview-text" data-testid="action-body-preview">
+              {previewBody(action.bodyMd)}
+            </p>
+            <button
+              type="button"
+              className="btn btn-small btn-ghost"
+              onClick={() => setExpanded(true)}
+              data-testid="action-expand"
+            >
+              Show details
+            </button>
+          </div>
+        )}
       </div>
       {!snoozing && (
-        <div className="occurrence-actions">
+        <div className="action-actions">
           <button
             type="button"
             className="btn btn-success"
@@ -84,28 +103,32 @@ function OccurrenceCard({
           >
             Complete
           </button>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => setSnoozing(true)}
-            data-testid="snooze-button"
-          >
-            Snooze
-          </button>
-          <button
-            type="button"
-            className="btn btn-danger-ghost"
-            onClick={() => setDismissing(true)}
-            data-testid="dismiss-button"
-          >
-            Dismiss
-          </button>
+          {!isFileSourced && (
+            <>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setSnoozing(true)}
+                data-testid="snooze-button"
+              >
+                Snooze
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger-ghost"
+                onClick={() => setDismissing(true)}
+                data-testid="dismiss-button"
+              >
+                Dismiss
+              </button>
+            </>
+          )}
           {sudoMode && (
             <button
               type="button"
               className="btn btn-small btn-danger-ghost"
               onClick={() => setConfirmingDelete(true)}
-              data-testid="delete-occurrence"
+              data-testid="delete-action"
             >
               Delete
             </button>
@@ -115,7 +138,7 @@ function OccurrenceCard({
       {snoozing && <SnoozePanel onSnooze={snooze} onCancel={() => setSnoozing(false)} />}
       {dismissing && (
         <DismissDialog
-          occurrence={occurrence}
+          action={action}
           onDone={() => {
             setDismissing(false);
             onActioned();
@@ -123,11 +146,15 @@ function OccurrenceCard({
           onCancel={() => setDismissing(false)}
         />
       )}
+      {expanded && action.bodyMd && (
+        <Modal title={action.title} onClose={() => setExpanded(false)}>
+          <div className="markdown-body" data-testid="action-body-full">
+            <ReactMarkdown>{action.bodyMd}</ReactMarkdown>
+          </div>
+        </Modal>
+      )}
       {confirmingDelete && (
-        <Modal
-          title={`Delete "${occurrence.todoName}" from inbox?`}
-          onClose={() => setConfirmingDelete(false)}
-        >
+        <Modal title={`Delete "${action.title}" from inbox?`} onClose={() => setConfirmingDelete(false)}>
           <p className="muted">
             This permanently removes the inbox item and its event history. It will not appear in
             history or analytics. This cannot be undone.
@@ -139,8 +166,8 @@ function OccurrenceCard({
             <button
               type="button"
               className="btn btn-danger"
-              onClick={deleteOccurrence}
-              data-testid="confirm-delete-occurrence"
+              onClick={deleteAction}
+              data-testid="confirm-delete-action"
             >
               Delete
             </button>
@@ -155,10 +182,7 @@ export function InboxView(): React.JSX.Element {
   const { sudoMode } = useSudoMode();
   const version = useDataVersion();
   const now = useNow();
-  const { data: pending, reload } = useAsyncData(
-    () => api.listPendingOccurrences(),
-    [version],
-  );
+  const { data: pending, reload } = useAsyncData(() => api.listPendingActions(), [version]);
 
   if (pending === null) {
     return <div className="view" />;
@@ -188,10 +212,10 @@ export function InboxView(): React.JSX.Element {
       {groups.map((group) => (
         <section key={group.heading} className="day-group">
           <h2 className="day-heading">{group.heading}</h2>
-          {group.occurrences.map((occurrence) => (
-            <OccurrenceCard
-              key={occurrence.id}
-              occurrence={occurrence}
+          {group.actions.map((action) => (
+            <ActionCard
+              key={action.id}
+              action={action}
               now={now}
               sudoMode={sudoMode}
               onActioned={reload}

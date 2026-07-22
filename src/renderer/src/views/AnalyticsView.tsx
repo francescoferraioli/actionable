@@ -99,7 +99,7 @@ function TrendChart({ points }: TrendChartProps): React.JSX.Element {
         viewBox={`0 0 ${width} ${height}`}
         style={{ width: '100%', display: 'block' }}
         role="img"
-        aria-label="Daily completed and dismissed occurrences"
+        aria-label="Daily completed and dismissed actions"
       >
         {ticks.map((tick) => (
           <g key={tick}>
@@ -205,10 +205,10 @@ function TrendChart({ points }: TrendChartProps): React.JSX.Element {
 function TodoAnalyticsCard({ todo }: { todo: TodoAnalytics }): React.JSX.Element {
   return (
     <div className="card" data-testid="todo-analytics-card">
-      <div className="occurrence-title">
-        <span className="occurrence-name">{todo.todoName}</span>
+      <div className="action-title">
+        <span className="action-name">{todo.todoName}</span>
         <span className="muted">
-          {todo.total} occurrence{todo.total === 1 ? '' : 's'}
+          {todo.total} action{todo.total === 1 ? '' : 's'}
         </span>
       </div>
       <div className="form-row" style={{ marginTop: 8 }}>
@@ -275,7 +275,7 @@ export function AnalyticsView(): React.JSX.Element {
     <div className="view">
       <div className="view-header">
         <h1 className="view-title">Analytics</h1>
-        <div className="occurrence-actions">
+        <div className="action-actions">
           {RANGE_OPTIONS.map((days) => (
             <button
               key={days}
@@ -289,18 +289,18 @@ export function AnalyticsView(): React.JSX.Element {
         </div>
       </div>
 
-      {summary && summary.totals.occurrences === 0 && (
+      {summary && summary.totals.actions === 0 && (
         <div className="empty-state" data-testid="analytics-empty">
           <div className="empty-state-icon">📈</div>
           <h2>No data yet</h2>
-          <p className="muted">Analytics appear once occurrences start happening.</p>
+          <p className="muted">Analytics appear once scheduled actions start happening.</p>
         </div>
       )}
 
-      {summary && summary.totals.occurrences > 0 && (
+      {summary && summary.totals.actions > 0 && (
         <>
           <div className="stat-row" data-testid="analytics-totals">
-            <StatTile label="Occurrences" value={summary.totals.occurrences} />
+            <StatTile label="Actions" value={summary.totals.actions} />
             <StatTile label="Completed" value={summary.totals.completed} />
             <StatTile label="Dismissed" value={summary.totals.dismissed} />
             <StatTile label="Snoozes" value={summary.totals.snoozeEvents} />

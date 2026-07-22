@@ -74,7 +74,7 @@ export function ScheduleEditor({
           <option value="hourlyBetween">Every hour between</option>
           <option value="custom">Custom cron</option>
         </select>
-        <div className="occurrence-actions">
+        <div className="action-actions">
           <label className="checkbox-field">
             <input
               type="checkbox"

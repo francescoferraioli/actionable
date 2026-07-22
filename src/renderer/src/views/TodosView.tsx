@@ -31,15 +31,15 @@ function TodoCard({ todo, onEdit, onDelete }: TodoCardProps): React.JSX.Element 
       data-testid="todo-card"
     >
       <div className="todo-meta">
-        <div className="occurrence-title">
-          <span className="occurrence-name">{todo.name}</span>
+        <div className="action-title">
+          <span className="action-name">{todo.name}</span>
           {todo.category && <span className="chip">{todo.category}</span>}
           {!todo.active && <span className="chip">inactive</span>}
         </div>
         {todo.description && <div className="muted">{todo.description}</div>}
         <div className="todo-schedules">{describeSchedules(todo)}</div>
       </div>
-      <div className="occurrence-actions">
+      <div className="action-actions">
         <button type="button" className="btn btn-small" onClick={onEdit} data-testid="edit-todo">
           Edit
         </button>
@@ -121,7 +121,7 @@ export function TodosView(): React.JSX.Element {
       {deleting && (
         <Modal title={`Delete "${deleting.name}"?`} onClose={() => setDeleting(null)}>
           <p className="muted">
-            This deletes the todo, its schedules and its entire occurrence history. This cannot be
+            This deletes the todo, its schedules and its entire action history. This cannot be
             undone.
           </p>
           <div className="modal-actions">
