@@ -5,7 +5,7 @@ import {
   type ElectronApplication,
   type Page,
 } from '@playwright/test';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -90,4 +90,28 @@ export async function createTodoFiringSoon(
   category?: string,
 ): Promise<void> {
   await createTodo(page, { name, category, cron: cronFiringInSeconds(4) });
+}
+
+/** Configures the inbox folder watcher via Settings (manual path input). */
+export async function configureInboxFolder(page: Page, folderPath: string): Promise<void> {
+  await page.getByTestId('nav-settings').click();
+  await page.getByTestId('inbox-folder-manual-input').fill(folderPath);
+  await page.getByTestId('apply-inbox-folder-manual').click();
+  await expect(page.getByTestId('inbox-folder-path')).toHaveText(folderPath);
+}
+
+/** Creates a throwaway directory for inbox-folder e2e tests. */
+export function createInboxFolder(): string {
+  return mkdtempSync(join(tmpdir(), 'actionable-inbox-e2e-'));
+}
+
+/** Writes a markdown file into the inbox folder (simulates an external drop). */
+export function dropMarkdownInboxFile(
+  folder: string,
+  filename: string,
+  body: string,
+): string {
+  const path = join(folder, filename);
+  writeFileSync(path, body, 'utf8');
+  return path;
 }
