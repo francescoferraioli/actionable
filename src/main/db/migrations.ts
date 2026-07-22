@@ -136,6 +136,7 @@ const MIGRATIONS: string[] = [
     value TEXT NOT NULL
   );
   `,
+  `ALTER TABLE actions ADD COLUMN url TEXT;`,
 ];
 
 export function migrate(db: DatabaseSync, options?: { upTo?: number }): void {
