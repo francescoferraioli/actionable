@@ -5,8 +5,10 @@ import type {
   ActionStatus,
   ActionWithTodo,
 } from '../../../shared/types';
+import { Modal } from '../components/Modal';
 import { api } from '../lib/api';
 import { useAsyncData, useDataVersion, useNow } from '../lib/hooks';
+import { useSudoMode } from '../lib/sudo-mode';
 
 type StatusFilter = ActionStatus | 'all';
 
@@ -61,32 +63,82 @@ function statusDetail(action: ActionWithTodo): string {
   }
 }
 
-function HistoryRow({ action }: { action: ActionWithTodo }): React.JSX.Element {
+interface HistoryRowProps {
+  action: ActionWithTodo;
+  sudoMode: boolean;
+  onDeleted: () => void;
+}
+
+function HistoryRow({ action, sudoMode, onDeleted }: HistoryRowProps): React.JSX.Element {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const icon = STATUS_ICONS[action.status];
+
+  const deleteAction = async (): Promise<void> => {
+    await api.deleteAction(action.id);
+    setConfirmingDelete(false);
+    onDeleted();
+  };
+
   return (
-    <div className="card history-row" data-testid="history-row">
-      <div className={`history-icon ${icon.className}`}>{icon.symbol}</div>
-      <div className="history-detail">
-        <div className="action-title">
-          <span className="action-name">{action.title}</span>
-          {action.todoCategory && <span className="chip">{action.todoCategory}</span>}
+    <>
+      <div className="card history-row" data-testid="history-row">
+        <div className={`history-icon ${icon.className}`}>{icon.symbol}</div>
+        <div className="history-detail">
+          <div className="action-title">
+            <span className="action-name">{action.title}</span>
+            {action.todoCategory && <span className="chip">{action.todoCategory}</span>}
+          </div>
+          <div className="muted" data-testid="history-status">
+            {statusDetail(action)}
+          </div>
         </div>
-        <div className="muted" data-testid="history-status">
-          {statusDetail(action)}
-        </div>
+        <div className="history-time">{formatTime(action.scheduledAt)}</div>
+        {sudoMode && (
+          <button
+            type="button"
+            className="btn-icon btn-icon-danger"
+            onClick={() => setConfirmingDelete(true)}
+            aria-label="Delete"
+            title="Delete"
+            data-testid="delete-history-action"
+          >
+            ⌫
+          </button>
+        )}
       </div>
-      <div className="history-time">{formatTime(action.scheduledAt)}</div>
-    </div>
+      {confirmingDelete && (
+        <Modal title={`Delete "${action.title}" from history?`} onClose={() => setConfirmingDelete(false)}>
+          <p className="muted">
+            This permanently removes the action and its event history. It will not appear in
+            history or analytics. This cannot be undone.
+          </p>
+          <div className="modal-actions">
+            <button type="button" className="btn" onClick={() => setConfirmingDelete(false)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={deleteAction}
+              data-testid="confirm-delete-history-action"
+            >
+              Delete
+            </button>
+          </div>
+        </Modal>
+      )}
+    </>
   );
 }
 
 export function HistoryView(): React.JSX.Element {
+  const { sudoMode } = useSudoMode();
   const version = useDataVersion();
   const now = useNow();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const { data: todos } = useAsyncData(() => api.listTodos(), [version]);
   const { data: categories } = useAsyncData(() => api.listCategories(), [version]);
-  const { data: actions } = useAsyncData(
+  const { data: actions, reload } = useAsyncData(
     () => api.listHistory(toHistoryFilters(filters)),
     [version, filters],
   );
@@ -190,7 +242,12 @@ export function HistoryView(): React.JSX.Element {
         <section key={group.heading} className="day-group">
           <h2 className="day-heading">{group.heading}</h2>
           {group.items.map((action) => (
-            <HistoryRow key={action.id} action={action} />
+            <HistoryRow
+              key={action.id}
+              action={action}
+              sudoMode={sudoMode}
+              onDeleted={reload}
+            />
           ))}
         </section>
       ))}

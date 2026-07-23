@@ -101,3 +101,27 @@ test('sudo mode can delete an inbox item without leaving history', async ({ page
   await page.getByTestId('nav-history').click();
   await expect(page.getByTestId('history-row').filter({ hasText: 'Old reminder' })).toHaveCount(0);
 });
+
+test('sudo mode can delete a history item', async ({ page }) => {
+  await createTodoFiringSoon(page, 'Completed task');
+
+  await page.getByTestId('nav-inbox').click();
+  const card = page.getByTestId('action-card').filter({ hasText: 'Completed task' });
+  await expect(card).toBeVisible();
+  await card.getByTestId('complete-button').click();
+  await expect(page.getByTestId('inbox-empty')).toBeVisible();
+
+  await page.getByTestId('nav-history').click();
+  const historyRow = page.getByTestId('history-row').filter({ hasText: 'Completed task' });
+  await expect(historyRow).toBeVisible();
+  await expect(historyRow.getByTestId('delete-history-action')).toHaveCount(0);
+
+  await enterSudoMode(page);
+  await historyRow.getByTestId('delete-history-action').click();
+  await page.getByTestId('confirm-delete-history-action').click();
+
+  await expect(page.getByTestId('history-empty')).toBeVisible();
+
+  await page.getByTestId('nav-analytics').click();
+  await expect(page.getByTestId('analytics-empty')).toBeVisible();
+});

@@ -74,8 +74,8 @@ export function App(): React.JSX.Element {
         {sudoMode && (
           <div className="sudo-mode-banner" data-testid="sudo-mode-banner">
             <span>
-              Sudo mode is on. You can delete inbox items without completing or dismissing them.
-              Exit when you are done.
+              Sudo mode is on. You can delete inbox and history items without completing or
+              dismissing them. Exit when you are done.
             </span>
             <button
               type="button"
@@ -97,12 +97,12 @@ export function App(): React.JSX.Element {
       {showSudoWarning && (
         <Modal title="Enter sudo mode?" onClose={() => setShowSudoWarning(false)}>
           <p className="muted">
-            Sudo mode lets you delete inbox items without completing, dismissing or snoozing them.
-            Use it to clean up mistakes or stale items, not to avoid accountability.
+            Sudo mode lets you delete inbox and history items without completing, dismissing or
+            snoozing them. Use it to clean up mistakes or stale items, not to avoid
+            accountability.
           </p>
           <p className="muted">
-            Deleted inbox items are removed permanently from history and analytics. This cannot be
-            undone.
+            Deleted items are removed permanently from history and analytics. This cannot be undone.
           </p>
           <div className="modal-actions">
             <button type="button" className="btn" onClick={() => setShowSudoWarning(false)}>
